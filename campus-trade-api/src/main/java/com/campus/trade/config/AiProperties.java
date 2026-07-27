@@ -1,0 +1,31 @@
+package com.campus.trade.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Component
+@ConfigurationProperties(prefix = "ai")
+public class AiProperties {
+    private boolean enabled = true;
+    private String baseUrl = "https://api.openai.com/v1";
+    private String apiKey;
+    private String chatModel = "gpt-4o-mini";
+    private String embeddingModel = "text-embedding-3-small";
+    private int timeoutMs = 10000;
+    private double temperature = 0.3;
+
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public String getBaseUrl() { return baseUrl; }
+    public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+    public String getApiKey() { return apiKey; }
+    public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+    public String getChatModel() { return chatModel; }
+    public void setChatModel(String chatModel) { this.chatModel = chatModel; }
+    public String getEmbeddingModel() { return embeddingModel; }
+    public void setEmbeddingModel(String embeddingModel) { this.embeddingModel = embeddingModel; }
+    public int getTimeoutMs() { return timeoutMs; }
+    public void setTimeoutMs(int timeoutMs) { this.timeoutMs = timeoutMs; }
+    public double getTemperature() { return temperature; }
+    public void setTemperature(double temperature) { this.temperature = temperature; }
+}

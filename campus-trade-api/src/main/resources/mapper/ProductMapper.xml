@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.trade.mapper.ProductMapper">
+
+    <!-- 用于列表查询的、简单的 ResultMap -->
+    <resultMap id="ProductWithSeller" type="com.campus.trade.entity.Product">
+        <id property="id" column="p_id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="price" column="price"/>
+        <result property="conditionLevel" column="condition_level"/>
+        <result property="coverImage" column="cover_image"/>
+        <result property="status" column="p_status"/>
+        <result property="deliveryOptions" column="delivery_options"/>
+        <result property="createTime" column="p_create_time"/>
+        <result property="sellerNickname" column="nickname"/>
+        <result property="sellerAvatar" column="avatar"/>
+        <result property="creditScore" column="credit_score"/>
+    </resultMap>
+
+    <!-- 【关键修正】用于详情查询的、包含图片列表的复杂 ResultMap -->
+    <resultMap id="ProductWithDetails" type="com.campus.trade.entity.Product">
+        <id property="id" column="p_id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="price" column="price"/>
+        <result property="conditionLevel" column="condition_level"/>
+        <result property="coverImage" column="cover_image"/>
+        <result property="status" column="p_status"/>
+        <result property="deliveryOptions" column="delivery_options"/>
+        <result property="createTime" column="p_create_time"/>
+        <result property="sellerNickname" column="nickname"/>
+        <result property="sellerAvatar" column="avatar"/>
+        <result property="creditScore" column="credit_score"/>
+        <!--
+          使用 <collection> 标签来映射一对多的图片列表。
+          它会把所有关联的图片URL，收集到一个名为 "imageUrls" 的 List 中。
+        -->
+        <collection property="imageUrls" ofType="java.lang.String">
+            <result column="image_url"/>
+        </collection>
+    </resultMap>
+
+    <sql id="productColumns">
+        p.id as p_id, p.seller_id, p.category_id, p.title, p.description, p.price,
+        p.condition_level, p.cover_image, p.status as p_status,
+        p.delivery_options, p.create_time as p_create_time,
+        u.nickname, u.avatar, u.credit_score
+    </sql>
+
+    <!-- 【最终修正】移除了无效的  标签 -->
+    <select id="findProductById" resultMap="ProductWithDetails">
+        SELECT
+        <include refid="productColumns"/>,
+        pi.image_url
+        FROM product p
+        JOIN user u ON p.seller_id = u.id
+        LEFT JOIN product_images pi ON p.id = pi.product_id
+        WHERE p.id = #{productId}
+    </select>
+
+    <!-- 【修改】findProducts 查询，加入价格区间和动态排序逻辑 -->
+    <select id="findProducts" resultMap="ProductWithSeller">
+        SELECT <include refid="productColumns"/>
+        FROM product p JOIN user u ON p.seller_id = u.id
+        WHERE p.status = 'AVAILABLE'
+        <if test="keyword != null and keyword != ''">
+            AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR p.description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="categoryId != null and categoryId != ''">
+            AND p.category_id = #{categoryId}
+        </if>
+        <if test="minPrice != null">
+            AND p.price >= #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND p.price &lt;= #{maxPrice}
+        </if>
+        <choose>
+            <when test="orderBy == 'price_asc'">
+                ORDER BY p.price ASC, p.create_time DESC
+            </when>
+            <when test="orderBy == 'price_desc'">
+                ORDER BY p.price DESC, p.create_time DESC
+            </when>
+            <otherwise>
+                ORDER BY p.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="findProductsWithLimit" resultMap="ProductWithSeller">
+        SELECT <include refid="productColumns"/>
+        FROM product p JOIN user u ON p.seller_id = u.id
+        WHERE p.status = 'AVAILABLE'
+        <if test="keyword != null and keyword != ''">
+            AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR p.description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="categoryId != null and categoryId != ''">
+            AND p.category_id = #{categoryId}
+        </if>
+        <if test="minPrice != null">
+            AND p.price >= #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND p.price &lt;= #{maxPrice}
+        </if>
+        <choose>
+            <when test="orderBy == 'price_asc'">
+                ORDER BY p.price ASC, p.create_time DESC
+            </when>
+            <when test="orderBy == 'price_desc'">
+                ORDER BY p.price DESC, p.create_time DESC
+            </when>
+            <otherwise>
+                ORDER BY p.create_time DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+
+    <select id="findAllForAdmin" resultMap="ProductWithSeller">
+        SELECT <include refid="productColumns"/>
+        FROM product p JOIN user u ON p.seller_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                p.title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <!-- 【修改】在 insertProduct 语句中加入 delivery_options 字段 -->
+    <insert id="insertProduct" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product(seller_id, category_id, title, description, price, condition_level, cover_image, status, delivery_options)
+        VALUES(#{sellerId}, #{categoryId}, #{title}, #{description}, #{price}, #{conditionLevel}, #{coverImage}, 'AVAILABLE', #{deliveryOptions})
+    </insert>
+
+    <!-- 【修改】在 updateProduct 语句中加入 delivery_options 字段 -->
+    <update id="updateProduct">
+        UPDATE product SET
+        category_id = #{categoryId},
+        title = #{title},
+        description = #{description},
+        price = #{price},
+        condition_level = #{conditionLevel},
+        delivery_options = #{deliveryOptions},
+        <choose>
+          <when test="coverImage != null">
+            cover_image =
+              <choose>
+                <when test="coverImage == ''">
+                  NULL,
+                </when>
+                <otherwise>
+                  #{coverImage},
+                </otherwise>
+              </choose>
+          </when>
+        </choose>
+        update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateProductStatus">
+        UPDATE product SET status = #{status} WHERE id = #{productId}
+    </update>
+
+    <select id="countTotalProducts" resultType="long">
+        SELECT COUNT(*) FROM product
+    </select>
+
+    <select id="countProductTrends" resultType="com.campus.trade.dto.DailyStatsDTO">
+        SELECT DATE(create_time) as date, COUNT(*) as count
+        FROM product
+        WHERE create_time >= CURDATE() - INTERVAL #{days} DAY
+        GROUP BY DATE(create_time)
+        ORDER BY date ASC
+    </select>
+
+    <!-- 【新增】推荐商品查询的SQL -->
+    <select id="findRecommendedProducts" resultMap="ProductWithSeller">
+        SELECT
+        <include refid="productColumns"/>,
+        COUNT(p.id) as recommendation_score
+        FROM favorites f1
+        JOIN favorites f2 ON f1.user_id = f2.user_id AND f1.product_id != f2.product_id
+        JOIN product p ON f2.product_id = p.id
+        JOIN user u ON p.seller_id = u.id
+        WHERE f1.product_id = #{productId}
+        AND p.status = 'AVAILABLE'
+        GROUP BY p.id
+        ORDER BY recommendation_score DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findAvailableByCategory" resultMap="ProductWithSeller">
+        SELECT <include refid="productColumns"/>
+        FROM product p JOIN user u ON p.seller_id = u.id
+        WHERE p.status = 'AVAILABLE'
+        AND p.category_id = #{categoryId}
+        <if test="excludeId != null and excludeId != ''">
+            AND p.id != #{excludeId}
+        </if>
+        ORDER BY p.create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findRecentProductsBySeller" resultType="com.campus.trade.entity.Product">
+        SELECT id, seller_id, category_id, title, description, price, condition_level, cover_image, status, create_time
+        FROM product
+        WHERE seller_id = #{sellerId}
+        AND create_time >= NOW() - INTERVAL #{days} DAY
+        <if test="excludeId != null and excludeId != ''">
+            AND id != #{excludeId}
+        </if>
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findBySeller" resultMap="ProductWithSeller">
+        SELECT <include refid="productColumns"/>
+        FROM product p JOIN user u ON p.seller_id = u.id
+        WHERE p.seller_id = #{sellerId}
+        ORDER BY p.create_time DESC
+    </select>
+
+    <select id="findProductsForEmbedding" resultType="com.campus.trade.entity.Product">
+        SELECT id, title, description
+        FROM product
+        WHERE status = 'AVAILABLE'
+        ORDER BY id ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="getCategoryAveragePrice" resultType="double">
+        SELECT AVG(price)
+        FROM product
+        WHERE category_id = #{categoryId} AND status = 'AVAILABLE'
+    </select>
+
+    <select id="getCategoryPriceStats" resultType="com.campus.trade.dto.CategoryPriceStats">
+        SELECT MIN(price) AS minPrice,
+               MAX(price) AS maxPrice,
+               AVG(price) AS avgPrice,
+               COUNT(*) AS totalCount
+        FROM product
+        WHERE category_id = #{categoryId} AND status = 'AVAILABLE'
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM product WHERE id = #{productId}
+    </delete>
+
+
+
+
+</mapper>

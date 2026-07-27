@@ -1,0 +1,78 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: campus-trade-api
+  datasource:
+    url: jdbc:mysql://localhost:3306/campus_trade?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root # 【注意】替换为你的数据库用户名
+    password: "051012" # 【注意】替换为你的数据库密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: localhost # 【注意】替换为你的Redis主机
+    port: 6379
+    password: # 【注意】如果你的Redis有密码，请填写
+    database: 0
+  web:
+    resources:
+      static-locations: file:${file.upload.path} # 允许通过URL访问上传的文件
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  mail:
+  host: smtp.qq.com # 【注意】以QQ邮箱为例，请替换为您自己的SMTP服务器地址
+  port: 587 # 【注意】通常是 465 (SSL) 或 587 (TLS)
+  username: 3400543018@qq.com # 【注意】您的发件邮箱地址
+  password: thuonzxrwhnfcjid # 【注意】这不是邮箱密码，而是生成的授权码
+  protocol: smtp
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+          required: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.campus.trade.mapper: debug
+
+# JWT 配置
+jwt:
+  secret: "a-very-long-and-secure-secret-key-for-campus-trade-project-in-2025" # 【注意】生产环境请使用更安全的密钥
+  expiration: 86400000 # 24小时
+
+
+
+file:
+  upload-dir: uploads
+
+ai:
+  enabled: true
+  base-url: 111
+  api-key: 111
+  chat-model: qwen3.7-max
+  embedding-model: qwen3.7-text-embedding
+  timeout-ms: 10000
+  temperature: 0.3
+
+search:
+  hybrid:
+    semantic-weight: 0.7
+    lexical-weight: 0.3
+    candidate-limit: 200
+    min-semantic-score: 0.2
+
+recommend:
+  hybrid:
+    embedding-weight: 0.7
+    cf-weight: 0.3
+    candidate-limit: 50
+    result-limit: 5

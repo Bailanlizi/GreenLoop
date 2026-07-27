@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.trade.mapper.ProductEmbeddingMapper">
+
+    <resultMap id="ProductEmbeddingMap" type="com.campus.trade.entity.ProductEmbedding">
+        <id property="productId" column="product_id"/>
+        <result property="embedding" column="embedding"/>
+        <result property="model" column="model"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByProductId" resultMap="ProductEmbeddingMap">
+        SELECT product_id, embedding, model, updated_at
+        FROM product_embeddings
+        WHERE product_id = #{productId}
+    </select>
+
+    <select id="findByProductIds" resultMap="ProductEmbeddingMap">
+        SELECT product_id, embedding, model, updated_at
+        FROM product_embeddings
+        WHERE product_id IN
+        <foreach collection="productIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <insert id="upsertEmbedding">
+        INSERT INTO product_embeddings (product_id, embedding, model)
+        VALUES (#{productId}, #{embedding}, #{model})
+        ON DUPLICATE KEY UPDATE
+        embedding = VALUES(embedding),
+        model = VALUES(model),
+        updated_at = CURRENT_TIMESTAMP
+    </insert>
+</mapper>

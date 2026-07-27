@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.trade.mapper.UserMapper">
+
+    <!-- 这个文件只应该包含与 User 相关的 SQL -->
+
+    <select id="findByUsername" resultType="com.campus.trade.entity.User">
+        SELECT * FROM user WHERE username = #{username}
+    </select>
+
+    <select id="findById" resultType="com.campus.trade.entity.User">
+        SELECT * FROM user WHERE id = #{id}
+    </select>
+
+    <insert id="insertUser" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user(username, password, nickname, role, status, email, email_verified)
+        VALUES(#{username}, #{password}, #{nickname}, 'USER', 1, #{email}, #{emailVerified})
+    </insert>
+
+    <!-- 【最终修正】确保 <where> 和 <if> 标签的逻辑是正确的，并且没有被任何无效标签包裹 -->
+    <select id="findAll" resultType="com.campus.trade.entity.User">
+        SELECT * FROM user
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (username LIKE CONCAT('%', #{keyword}, '%') OR nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="role != null and role != ''">
+                AND role = #{role}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <update id="updateUserStatus">
+        UPDATE user SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="updateCreditScore">
+        UPDATE user SET credit_score = credit_score + #{scoreChange} WHERE id = #{userId}
+    </update>
+
+    <update id="updateProfile">
+        UPDATE user
+        <set>
+            <if test="nickname != null and nickname != ''">
+                nickname = #{nickname},
+            </if>
+            <if test="avatar != null">
+                avatar = #{avatar},
+            </if>
+            <if test="bio != null">
+                bio = #{bio},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateUserByAdmin">
+        UPDATE user
+        <set>
+            <if test="nickname != null and nickname != ''"> nickname = #{nickname}, </if>
+            <if test="password != null and password != ''"> password = #{password}, </if>
+            <if test="role != null and role != ''"> role = #{role}, </if>
+            <if test="status != null"> status = #{status}, </if>
+            <if test="creditScore != null"> credit_score = #{creditScore}, </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM user WHERE id = #{id}
+    </delete>
+
+    <select id="countTotalUsers" resultType="long">
+        SELECT COUNT(*) FROM user
+    </select>
+
+    <select id="countDailyRegistrations" resultType="com.campus.trade.dto.DailyStatsDTO">
+        SELECT DATE(create_time) as date, COUNT(*) as count
+        FROM user
+        WHERE create_time >= CURDATE() - INTERVAL 7 DAY
+        GROUP BY DATE(create_time)
+        ORDER BY date ASC
+    </select>
+
+    <select id="countUserGrowth" resultType="com.campus.trade.dto.DailyStatsDTO">
+        SELECT DATE(create_time) as date, COUNT(*) as count
+        FROM user
+        WHERE create_time >= CURDATE() - INTERVAL #{days} DAY
+        GROUP BY DATE(create_time)
+        ORDER BY date ASC
+    </select>
+
+    <select id="findByEmail" resultType="com.campus.trade.entity.User">
+        SELECT * FROM user WHERE email = #{email}
+    </select>
+
+    <insert id="insertUserByAdmin" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user(username, password, nickname, role, status, credit_score, email, email_verified)
+        VALUES(#{username}, #{password}, #{nickname}, #{role}, #{status}, #{creditScore}, #{email}, #{emailVerified})
+    </insert>
+
+</mapper>
