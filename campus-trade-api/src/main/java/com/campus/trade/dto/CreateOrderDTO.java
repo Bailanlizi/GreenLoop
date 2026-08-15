@@ -1,10 +1,18 @@
 package com.campus.trade.dto;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+
 public class CreateOrderDTO {
+    @NotBlank(message = "商品不能为空")
     private String productId;
-    private String deliveryMethod; // 【新增】明确指定本次下单选择的配送方式
-    private Integer meetupLocationId; // 如果是线下面交
-    private Long shippingAddressId; // 如果是快递配送
+
+    @NotBlank(message = "履约方式不能为空")
+    @Pattern(regexp = "MEETUP|SHIPPING", message = "履约方式不合法")
+    private String deliveryMethod;
+
+    private Integer meetupLocationId;
+    private Long shippingAddressId;
 
     // Getters and Setters...
     public String getProductId() { return productId; }

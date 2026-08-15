@@ -25,6 +25,10 @@ public interface ProductMapper {
     void insertProduct(Product product);
     void updateProduct(Product product);
     void updateProductStatus(@Param("productId") String productId, @Param("status") String status);
+    int lockProductIfAvailable(@Param("productId") String productId);
+    int updateProductStatusIfCurrent(@Param("productId") String productId,
+                                     @Param("currentStatus") String currentStatus,
+                                     @Param("targetStatus") String targetStatus);
 
     // 【新增】为管理员查询所有商品的方法，支持按标题关键词搜索
     List<Product> findAllForAdmin(@Param("keyword") String keyword);

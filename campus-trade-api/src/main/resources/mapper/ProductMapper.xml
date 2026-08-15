@@ -172,6 +172,16 @@
         UPDATE product SET status = #{status} WHERE id = #{productId}
     </update>
 
+    <update id="lockProductIfAvailable">
+        UPDATE product SET status = 'LOCKED'
+        WHERE id = #{productId} AND status = 'AVAILABLE'
+    </update>
+
+    <update id="updateProductStatusIfCurrent">
+        UPDATE product SET status = #{targetStatus}
+        WHERE id = #{productId} AND status = #{currentStatus}
+    </update>
+
     <select id="countTotalProducts" resultType="long">
         SELECT COUNT(*) FROM product
     </select>

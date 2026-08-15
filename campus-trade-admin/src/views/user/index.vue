@@ -6,7 +6,7 @@
         <!-- 【新增】筛选控件 -->
         <el-input
           v-model="filters.keyword"
-          placeholder="按学号或昵称搜索"
+          placeholder="按账号或昵称搜索"
           clearable
           @clear="handleFilterChange"
           @keyup.enter="handleFilterChange"
@@ -28,7 +28,7 @@
 
     <el-table :data="users" v-loading="loading" style="width: 100%">
       <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="username" label="用户名 (学号)" />
+      <el-table-column prop="username" label="登录账号" />
       <el-table-column prop="nickname" label="昵称" />
       <el-table-column prop="role" label="角色" />
       <el-table-column prop="creditScore" label="信誉分" width="100" align="center" sortable />
@@ -79,7 +79,7 @@
     <!-- 新增/编辑用户的对话框 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px" @close="resetForm">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="用户名 (学号)" prop="username">
+        <el-form-item label="登录账号" prop="username">
           <el-input v-model="form.username" :disabled="isEdit" />
         </el-form-item>
         <el-form-item label="昵称" prop="nickname">

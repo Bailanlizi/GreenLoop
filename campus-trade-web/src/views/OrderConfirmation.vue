@@ -32,7 +32,7 @@
         <!-- 根据选择的配送方式，显示不同的内容 -->
         <div v-if="form.deliveryMethod === 'MEETUP'" class="delivery-option-content">
             <h4>选择交易地点</h4>
-            <el-select v-model="form.meetupLocationId" placeholder="请选择一个校园内交易地点" style="width: 100%;" :loading="locationsLoading">
+            <el-select v-model="form.meetupLocationId" placeholder="请选择一个平台交易地点" style="width: 100%;" :loading="locationsLoading">
                 <el-option v-for="loc in locations" :key="loc.id" :label="loc.name" :value="loc.id" />
             </el-select>
             <h4 style="margin-top: 20px;">建议交易时间</h4>

@@ -1,5 +1,6 @@
 package com.campus.trade.security;
 
+import com.campus.trade.common.Result;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -9,8 +10,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 自定义认证入口点，用于处理认证失败（未登录）的情况。
@@ -27,11 +26,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("code", 401);
-        result.put("msg", "需要认证，请先登录");
-
         ObjectMapper mapper = new ObjectMapper();
-        response.getWriter().write(mapper.writeValueAsString(result));
+        response.getWriter().write(mapper.writeValueAsString(
+                Result.error(401, "需要认证，请先登录", "AUTH_UNAUTHENTICATED")));
     }
 }

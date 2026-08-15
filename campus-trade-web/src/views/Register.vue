@@ -2,10 +2,10 @@
   <div class="form-container">
     <el-card class="form-card">
       <template #header>
-        <h2>注册成为校园集市新用户</h2>
+        <h2>注册 GreenLoop 账号</h2>
       </template>
       <el-form :model="form" :rules="rules" ref="formRef" @submit.prevent="handleRegister" label-position="top">
-        <el-form-item label="学号" prop="username">
+        <el-form-item label="账号" prop="username">
           <el-input v-model="form.username" placeholder="将作为你的登录账号"></el-input>
         </el-form-item>
         <el-form-item label="昵称" prop="nickname">
@@ -109,7 +109,7 @@ const validatePass2 = (rule, value, callback) => {
 };
 
 const rules = reactive({
-  username: [{ required: true, message: '请输入学号', trigger: 'blur' }],
+  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
   email: [{ required: true, message: '请输入邮箱地址', trigger: 'blur' }, { type: 'email', message: '请输入有效的邮箱地址', trigger: ['blur', 'change'] }],
   verificationCode: [{ required: true, message: '请输入6位验证码', trigger: 'blur', len: 6 }],

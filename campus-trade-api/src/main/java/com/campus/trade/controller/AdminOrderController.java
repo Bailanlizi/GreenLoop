@@ -1,17 +1,12 @@
 package com.campus.trade.controller;
 
 import com.campus.trade.common.Result;
-import com.campus.trade.dto.AdminOrderCreateDTO;
-import com.campus.trade.dto.AdminOrderUpdateDTO;
 import com.campus.trade.dto.PageResult;
-import com.campus.trade.dto.ShipmentDTO;
 import com.campus.trade.entity.Order;
 import com.campus.trade.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/admin/orders")
@@ -35,31 +30,8 @@ public class AdminOrderController {
         return Result.success(orderService.findAllOrdersForAdmin(orderId, deliveryMethod, page, size));
     }
 
-    /**
-     * 【最终修正】新增管理员创建订单的接口
-     */
-    @PostMapping
-    public Result<Order> createOrder(@RequestBody AdminOrderCreateDTO orderDTO) {
-        return Result.success(orderService.createOrderByAdmin(orderDTO));
-    }
-
-    @PutMapping("/{id}")
-    public Result<Order> updateOrder(@PathVariable String id, @RequestBody AdminOrderUpdateDTO orderDTO) {
-        return Result.success(orderService.updateOrderByAdmin(id, orderDTO));
-    }
-
-    @DeleteMapping("/{id}")
-    public Result<Void> deleteOrder(@PathVariable String id) {
-        orderService.deleteOrder(id);
-        return Result.success();
-    }
-
-    /**
-     * 发货操作
-     */
-    @PutMapping("/{id}/ship")
-    public Result<Void> shipOrder(@PathVariable String id, @RequestBody ShipmentDTO shipmentDTO) {
-        orderService.shipOrder(id, shipmentDTO);
-        return Result.success();
+    @PostMapping("/{id}/force-cancel")
+    public Result<Order> forceCancelOrder(@PathVariable String id) {
+        return Result.success(orderService.forceCancelOrder(id));
     }
 }

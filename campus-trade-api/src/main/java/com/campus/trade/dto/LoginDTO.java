@@ -1,9 +1,13 @@
 package com.campus.trade.dto;
 
-// 【关键修正】移除了 @Data 注解，并手动添加了标准的 Getter 和 Setter 方法
+import javax.validation.constraints.NotBlank;
+
 public class LoginDTO {
 
+    @NotBlank(message = "账号不能为空")
     private String username;
+
+    @NotBlank(message = "密码不能为空")
     private String password;
 
     // --- Getters ---

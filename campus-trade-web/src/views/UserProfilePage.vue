@@ -5,14 +5,14 @@
             <el-button :icon="Edit" circle type="primary" @click="openDialog" />
         </div>
         <el-descriptions :column="1" border v-if="user">
-            <el-descriptions-item label="学号">{{ user.username }}</el-descriptions-item>
+            <el-descriptions-item label="账号">{{ user.username }}</el-descriptions-item>
             <el-descriptions-item label="昵称">{{ user.nickname }}</el-descriptions-item>
             <el-descriptions-item label="头像">
                 <el-avatar :size="60" :icon="UserFilled" :src="user.avatar" />
             </el-descriptions-item>
             <el-descriptions-item label="邮箱">{{ user.email }}</el-descriptions-item>
             <el-descriptions-item label="个人简介">
-                {{ user.bio || '这位同学很神秘，什么都还没留下...' }}
+                {{ user.bio || '这位用户很神秘，什么都还没留下...' }}
             </el-descriptions-item>
         </el-descriptions>
         <el-empty v-else description="用户不存在或已注销" />

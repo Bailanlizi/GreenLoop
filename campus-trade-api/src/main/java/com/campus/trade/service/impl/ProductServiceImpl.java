@@ -2,6 +2,7 @@ package com.campus.trade.service.impl;
 
 import com.campus.trade.config.HybridRecommendationProperties;
 import com.campus.trade.config.HybridSearchProperties;
+import com.campus.trade.domain.ProductStatus;
 import com.campus.trade.dto.AdminProductDTO;
 import com.campus.trade.dto.PageResult;
 import com.campus.trade.dto.ProductDTO;
@@ -168,6 +169,10 @@ public class ProductServiceImpl implements ProductService {
         if (!Objects.equals(existingProduct.getSellerId(), currentUserId)) {
             throw new CustomException("无权修改他人的商品");
         }
+        if (ProductStatus.LOCKED.name().equals(existingProduct.getStatus())
+                || ProductStatus.SOLD.name().equals(existingProduct.getStatus())) {
+            throw new CustomException("商品已被锁定或售出，无法编辑");
+        }
 
         existingProduct.setTitle(productDTO.getTitle());
         existingProduct.setDescription(productDTO.getDescription());
@@ -199,22 +204,18 @@ public class ProductServiceImpl implements ProductService {
             throw new CustomException("商品不存在");
         }
 
-        log.info(">>> [权限诊断] 正在为用户 '{}' (ID: {}) 更新商品状态...", user.getUsername(), user.getUserId());
-        String authoritiesString = user.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .collect(Collectors.joining(", "));
-        log.info(">>> [权限诊断] 该用户持有的权限为: [{}]", authoritiesString);
-
         boolean isAdmin = user.getAuthorities().stream()
                 .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()));
-
-        log.info(">>> [权限诊断] isAdmin 检查结果为: {}", isAdmin);
-
         if (!isAdmin && !Objects.equals(existingProduct.getSellerId(), user.getUserId())) {
             throw new CustomException("无权修改他人的商品");
         }
-
-        log.info(">>> [权限诊断] 权限检查通过，正在执行数据库更新...");
+        if (!ProductStatus.AVAILABLE.name().equals(existingProduct.getStatus())
+                && !ProductStatus.DELISTED.name().equals(existingProduct.getStatus())) {
+            throw new CustomException("锁定或已售出的商品不能变更状态");
+        }
+        if (!ProductStatus.AVAILABLE.name().equals(status) && !ProductStatus.DELISTED.name().equals(status)) {
+            throw new CustomException("不支持的商品状态变更");
+        }
         productMapper.updateProductStatus(productId, status);
     }
 
@@ -351,6 +352,10 @@ public class ProductServiceImpl implements ProductService {
         if (existingProduct == null) {
             throw new CustomException("商品不存在");
         }
+        if (ProductStatus.LOCKED.name().equals(existingProduct.getStatus())
+                || ProductStatus.SOLD.name().equals(existingProduct.getStatus())) {
+            throw new CustomException("商品已被锁定或售出，无法编辑");
+        }
 
         // 基本信息
         existingProduct.setTitle(productDTO.getTitle());
@@ -392,6 +397,13 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @CacheEvict(value = {"product::#productId", "products"}, allEntries = true)
     public void deleteProduct(String productId) {
+        Product product = productMapper.findProductById(productId);
+        if (product == null) {
+            throw new CustomException("商品不存在");
+        }
+        if (ProductStatus.LOCKED.name().equals(product.getStatus()) || ProductStatus.SOLD.name().equals(product.getStatus())) {
+            throw new CustomException("锁定或已售出的商品不能删除");
+        }
         productMapper.deleteById(productId);
     }
 

@@ -63,8 +63,9 @@
         VALUES(#{productId}, #{buyerId}, #{sellerId}, #{orderStatus}, #{totalPrice}, #{deliveryMethod}, #{meetupLocationId}, #{meetupTimeSlot}, #{shippingAddressId})
     </insert>
 
-    <update id="updateOrderStatus">
-        UPDATE orders SET order_status = #{status} WHERE id = #{orderId}
+    <update id="updateOrderStatusIfCurrent">
+        UPDATE orders SET order_status = #{targetStatus}
+        WHERE id = #{orderId} AND order_status = #{currentStatus}
     </update>
 
     <!-- 【新增】管理员查询所有订单的SQL -->
@@ -99,22 +100,9 @@
         ORDER BY date ASC
     </select>
 
-    <update id="updateOrderByAdmin">
+    <update id="markOrderShipped">
         UPDATE orders
-        <set>
-            <if test="orderStatus != null and orderStatus != ''"> order_status = #{orderStatus}, </if>
-            <if test="totalPrice != null"> total_price = #{totalPrice}, </if>
-            <if test="deliveryMethod != null and deliveryMethod != ''"> delivery_method = #{deliveryMethod}, </if>
-            <if test="meetupLocationId != null"> meetup_location_id = #{meetupLocationId}, </if>
-            <if test="meetupTimeSlot != null"> meetup_time_slot = #{meetupTimeSlot}, </if>
-            <if test="shippingProvider != null"> shipping_provider = #{shippingProvider}, </if>
-            <if test="trackingNumber != null"> tracking_number = #{trackingNumber}, </if>
-        </set>
-        WHERE id = #{id}
+        SET order_status = 'SHIPPED', shipping_provider = #{shippingProvider}, tracking_number = #{trackingNumber}
+        WHERE id = #{orderId} AND order_status = 'AWAITING_SHIPMENT' AND delivery_method = 'SHIPPING'
     </update>
-
-
-    <delete id="deleteById">
-        DELETE FROM orders WHERE id = #{orderId}
-    </delete>
 </mapper>

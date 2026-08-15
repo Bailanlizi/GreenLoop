@@ -47,20 +47,20 @@
       <el-table-column label="操作" width="200" align="center">
         <template #default="scope">
           <div class="action-btn-group">
-            <el-button size="small" class="btn-primary" @click="openDialog(scope.row)">编辑</el-button>
+            <el-button v-if="canManage(scope.row)" size="small" class="btn-primary" @click="openDialog(scope.row)">编辑</el-button>
             <el-button 
-              v-if="scope.row.status !== 'DELISTED'"
+              v-if="scope.row.status === 'AVAILABLE'"
               size="small" 
               class="btn-warning" 
               @click="handleStatusUpdate(scope.row, 'DELISTED')"
             >下架</el-button>
             <el-button 
-              v-else
-              size="small" 
+              v-else-if="scope.row.status === 'DELISTED'"
+              size="small"
               class="btn-success" 
               @click="handleStatusUpdate(scope.row, 'AVAILABLE')"
             >上架</el-button>
-            <el-button 
+            <el-button v-if="canManage(scope.row)"
               size="small" 
               class="btn-danger" 
               @click="handleDelete(scope.row)"
@@ -379,7 +379,8 @@ const handleDelete = (row) => {
   });
 };
 
-const statusMap = { 'AVAILABLE': { text: '在售', type: 'success' }, 'SOLD': { text: '已售出', type: 'info' }, 'DELISTED': { text: '已下架', type: 'danger' } };
+const statusMap = { 'AVAILABLE': { text: '在售', type: 'success' }, 'LOCKED': { text: '交易锁定', type: 'warning' }, 'SOLD': { text: '已售出', type: 'info' }, 'DELISTED': { text: '已下架', type: 'danger' } };
+const canManage = (product) => !['LOCKED', 'SOLD'].includes(product.status);
 const formatStatus = (status) => statusMap[status]?.text || '未知';
 const getStatusType = (status) => statusMap[status]?.type || 'info';
 

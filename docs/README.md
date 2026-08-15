@@ -1,4 +1,4 @@
-# GreenLoop - 校园二手交流平台
+# GreenLoop - 可信交易与资金风控平台
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.18-green)](https://spring.io/projects/spring-boot)
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-blue)](https://vuejs.org/)
@@ -6,7 +6,7 @@
 [![Java 21](https://img.shields.io/badge/Java-21-orange)](https://www.oracle.com/java/technologies/downloads/#java21)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E=16.x-green)](https://nodejs.org/)
 
-一个功能完善、技术栈现代化的全栈校园二手交易平台，采用前后端分离架构，集成 AI 智能搜索与推荐能力。
+一个面向个人、组织与园区场景的全栈可信交易平台，采用前后端分离架构，当前已具备商品交易、配送、信用、运营管理及 AI 辅助能力，并将持续演进模拟支付、资金托管、账户流水、退款结算与风险控制能力。
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## 项目概述
 
-本项目是一个面向高校学生的二手物品在线交易社区，采用 **Monorepo** 结构统一管理三个独立子项目：
+本项目采用 **Monorepo** 结构统一管理三个独立子项目。现阶段以闲置资产交易为核心业务场景，不再将用户身份限制为高校学生。
 
 | 模块 | 职责 | 端口 |
 |------|------|------|

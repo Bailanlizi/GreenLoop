@@ -2,11 +2,11 @@
   <div class="form-container">
     <el-card class="form-card">
       <template #header>
-        <h2>登录校园二手市场</h2>
+        <h2>登录 GreenLoop</h2>
       </template>
       <el-form @submit.prevent="handleLogin" :model="form" :rules="rules" ref="formRef" label-position="top">
-        <el-form-item label="学号" prop="username">
-          <el-input v-model="form.username" placeholder="请输入学号"></el-input>
+        <el-form-item label="账号" prop="username">
+          <el-input v-model="form.username" placeholder="请输入账号"></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input v-model="form.password" type="password" show-password placeholder="请输入密码"></el-input>
@@ -36,7 +36,7 @@ const form = reactive({ username: '', password: '' });
 const loading = ref(false);
 
 const rules = {
-  username: [{ required: true, message: '请输入学号', trigger: 'blur' }],
+  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 };
 

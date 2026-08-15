@@ -21,10 +21,10 @@
       </el-table-column>
       <el-table-column label="操作" width="150" align="center">
        <template #default="scope">
-          <!-- 【新增】评价按钮 -->
           <el-button type="primary" size="small" @click="openRatingDialog(scope.row)" v-if="scope.row.orderStatus === 'COMPLETED'">评价</el-button>
-          <el-button type="danger" size="small" @click="handleCancel(scope.row)" v-if="scope.row.orderStatus === 'AWAITING_MEETUP'">取消订单</el-button>
-          <span v-if="scope.row.orderStatus !== 'COMPLETED' && scope.row.orderStatus !== 'AWAITING_MEETUP'">--</span>
+          <el-button type="danger" size="small" @click="handleCancel(scope.row)" v-if="canCancel(scope.row)">取消订单</el-button>
+          <el-button type="primary" size="small" @click="handleConfirmCompletion(scope.row)" v-if="canConfirmCompletion(scope.row)">确认完成</el-button>
+          <span v-if="!canCancel(scope.row) && !canConfirmCompletion(scope.row) && scope.row.orderStatus !== 'COMPLETED'">--</span>
         </template>
       </el-table-column>
     </el-table>
@@ -38,7 +38,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { getMyPurchases, updateOrderStatus } from '../api/order';
+import { cancelOrder, confirmOrderCompletion, getMyPurchases } from '../api/order';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import RatingDialog from './RatingDialog.vue'; // 【新增】导入评价组件
 
@@ -78,12 +78,29 @@ const handleCancel = (row) => {
       confirmButtonText: '确定', cancelButtonText: '再想想', type: 'warning',
     }).then(async () => {
       try {
-        await updateOrderStatus(row.id, 'CANCELLED');
+        await cancelOrder(row.id);
         ElMessage.success('订单已取消');
         fetchOrders();
       } catch (error) {}
     });
 };
+
+const handleConfirmCompletion = (row) => {
+  ElMessageBox.confirm('确认完成后，商品将标记为已售出。', '确认完成订单', {
+    confirmButtonText: '确认完成', cancelButtonText: '暂不确认', type: 'warning',
+  }).then(async () => {
+    try {
+      await confirmOrderCompletion(row.id);
+      ElMessage.success('订单已完成');
+      fetchOrders();
+    } catch (error) {}
+  });
+};
+
+const canCancel = (order) => ['AWAITING_MEETUP', 'AWAITING_SHIPMENT'].includes(order.orderStatus);
+const canConfirmCompletion = (order) =>
+  (order.deliveryMethod === 'MEETUP' && order.orderStatus === 'AWAITING_MEETUP')
+  || (order.deliveryMethod === 'SHIPPING' && order.orderStatus === 'SHIPPED');
 
 // 【新增】打开评价对话框的方法
 const openRatingDialog = (order) => {
@@ -97,7 +114,6 @@ const statusMap = {
   'AWAITING_MEETUP': { text: '待交易', type: 'warning' },
   'AWAITING_SHIPMENT': { text: '待发货', type: 'warning' },
   'SHIPPED': { text: '已发货', type: 'info' },
-  'DELIVERED': { text: '已送达', type: 'success' },
   'COMPLETED': { text: '已完成', type: 'success' },
   'CANCELLED': { text: '已取消', type: 'info' }
 };

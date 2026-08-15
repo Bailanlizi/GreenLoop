@@ -7,6 +7,8 @@ import com.campus.trade.dto.UserProfileDTO; // 【新增】导入新的 DTO
 import com.campus.trade.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
 import java.util.Map;
 
 @RestController
@@ -20,13 +22,13 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public Result<Void> register(@RequestBody RegisterDTO registerDTO) {
+    public Result<Void> register(@Valid @RequestBody RegisterDTO registerDTO) {
         userService.register(registerDTO);
         return Result.success();
     }
 
     @PostMapping("/authenticate")
-    public Result<Map<String, Object>> login(@RequestBody LoginDTO loginDTO) {
+    public Result<Map<String, Object>> login(@Valid @RequestBody LoginDTO loginDTO) {
         Map<String, Object> result = userService.login(loginDTO);
         return Result.success(result);
     }

@@ -42,14 +42,8 @@ export const getProductDetailAdmin = (id) => {
 export const getAllOrdersAdmin = (params) => {
     return apiClient.get('/admin/orders', { params });
 };
-export const updateOrderByAdmin = (id, data) => {
-    return apiClient.put(`/admin/orders/${id}`, data);
-};
-export const deleteOrderAdmin = (id) => {
-    return apiClient.delete(`/admin/orders/${id}`);
-};
-export const createOrderByAdmin = (data) => {
-    return apiClient.post('/admin/orders', data);
+export const forceCancelOrderAdmin = (id) => {
+    return apiClient.post(`/admin/orders/${id}/force-cancel`);
 };
 
 
@@ -77,9 +71,6 @@ export const getProductTrendStats = (days = 15) => {
 };
 
 // --- Delivery Management ---
-export const shipOrderByAdmin = (orderId, data) => {
-    return apiClient.put(`/admin/orders/${orderId}/ship`, data);
-};
 export const getDeliveryStats = () => {
     return apiClient.get('/admin/delivery/stats');
 };

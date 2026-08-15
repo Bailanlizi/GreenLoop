@@ -25,8 +25,8 @@
             </div>
           </div>
           <div class="product-actions">
-            <el-button size="small" type="primary" @click.stop="editProduct(product.id)">编辑</el-button>
-            <el-button size="small" type="warning" @click.stop="toggleStatus(product)">
+            <el-button v-if="canManage(product)" size="small" type="primary" @click.stop="editProduct(product.id)">编辑</el-button>
+            <el-button v-if="canManage(product)" size="small" type="warning" @click.stop="toggleStatus(product)">
               {{ product.status === 'AVAILABLE' ? '下架' : '上架' }}
             </el-button>
           </div>
@@ -68,6 +68,7 @@ const fetchProducts = async () => {
 const goPublish = () => router.push('/publish');
 const goToDetail = (id) => router.push(`/product/${id}`);
 const editProduct = (id) => router.push(`/edit-product/${id}`);
+const canManage = (product) => !['LOCKED', 'SOLD'].includes(product.status);
 
 const toggleStatus = async (product) => {
   const nextStatus = product.status === 'AVAILABLE' ? 'DELISTED' : 'AVAILABLE';
@@ -90,6 +91,7 @@ const toggleStatus = async (product) => {
 const statusLabel = (status) => {
   if (status === 'AVAILABLE') return '在售';
   if (status === 'DELISTED') return '已下架';
+  if (status === 'LOCKED') return '交易锁定';
   if (status === 'SOLD') return '已售出';
   return status || '未知';
 };
@@ -97,6 +99,7 @@ const statusLabel = (status) => {
 const statusTagType = (status) => {
   if (status === 'AVAILABLE') return 'success';
   if (status === 'DELISTED') return 'info';
+  if (status === 'LOCKED') return 'warning';
   if (status === 'SOLD') return 'warning';
   return 'info';
 };
