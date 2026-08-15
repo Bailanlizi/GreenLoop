@@ -32,6 +32,10 @@
             </el-menu-item>
           </el-menu-item-group>
           <el-menu-item-group title="账户管理">
+            <el-menu-item index="/dashboard/wallet">
+              <el-icon><Wallet /></el-icon>
+              <span>资金账户</span>
+            </el-menu-item>
             <el-menu-item index="/dashboard/profile">
               <el-icon><User /></el-icon>
               <span>个人信息</span>
@@ -53,5 +57,5 @@
 </template>
 
 <script setup>
-import { Goods, Sell, User, Star, Location } from '@element-plus/icons-vue';
+import { Goods, Sell, User, Star, Location, Wallet } from '@element-plus/icons-vue';
 </script>

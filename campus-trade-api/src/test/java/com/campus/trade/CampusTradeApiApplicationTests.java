@@ -3,7 +3,7 @@ package com.campus.trade;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(properties = "orders.payment-expiration-enabled=false")
 class CampusTradeApiApplicationTests {
 
     @Test

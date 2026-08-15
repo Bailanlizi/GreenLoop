@@ -7,6 +7,7 @@ import com.campus.trade.mapper.UserMapper;
 import com.campus.trade.security.AuthenticatedUser;
 import com.campus.trade.security.JwtUtil;
 import com.campus.trade.service.UserService;
+import com.campus.trade.service.FinanceService;
 import com.campus.trade.service.impl.EmailServiceImpl; // 【新增】
 import org.springframework.data.redis.core.StringRedisTemplate; // 【新增】
 
@@ -36,18 +37,22 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final StringRedisTemplate redisTemplate; // 【新增】
+    private final FinanceService financeService;
 
 
     @Autowired
-    public UserServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtUtil jwtUtil, StringRedisTemplate redisTemplate) { //【修改】构造函数
+    public UserServiceImpl(UserMapper userMapper, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager,
+                           JwtUtil jwtUtil, StringRedisTemplate redisTemplate, FinanceService financeService) { //【修改】构造函数
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate; // 【新增】
+        this.financeService = financeService;
     }
 
     @Override
+    @Transactional
     public void register(RegisterDTO registerDTO) {
         if (userMapper.findByUsername(registerDTO.getUsername()) != null) {
             throw new CustomException("该学号已被注册");
@@ -75,6 +80,7 @@ public class UserServiceImpl implements UserService {
         user.setEmailVerified(true); // 验证通过
 
         userMapper.insertUser(user);
+        financeService.ensureAccount(user.getId());
 
         // 注册成功后，删除验证码
         redisTemplate.delete(redisKey);
@@ -160,6 +166,7 @@ public class UserServiceImpl implements UserService {
         user.setRole(userDTO.getRole());
         user.setStatus(1); // 默认启用
         userMapper.insertUser(user);
+        financeService.ensureAccount(user.getId());
         return user;
     }
 

@@ -46,6 +46,13 @@ export const forceCancelOrderAdmin = (id) => {
     return apiClient.post(`/admin/orders/${id}/force-cancel`);
 };
 
+// --- Finance Audit ---
+export const getFinanceAccounts = (params) => apiClient.get('/admin/finance/accounts', { params });
+export const getFinancePayments = (params) => apiClient.get('/admin/finance/payments', { params });
+export const getFinanceRefunds = (params) => apiClient.get('/admin/finance/refunds', { params });
+export const getFinanceSettlements = (params) => apiClient.get('/admin/finance/settlements', { params });
+export const getFinanceFlows = (params) => apiClient.get('/admin/finance/flows', { params });
+
 
 // --- Location Management ---
 export const getAllLocationsAdmin = () => { return apiClient.get('/admin/locations'); };

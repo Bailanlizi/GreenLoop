@@ -1,6 +1,7 @@
 package com.campus.trade.domain;
 
 public enum OrderStatus {
+    PENDING_PAYMENT,
     AWAITING_MEETUP,
     AWAITING_SHIPMENT,
     SHIPPED,
@@ -8,7 +9,7 @@ public enum OrderStatus {
     CANCELLED;
 
     public boolean canBuyerCancel() {
-        return this == AWAITING_MEETUP || this == AWAITING_SHIPMENT;
+        return this == PENDING_PAYMENT || this == AWAITING_MEETUP || this == AWAITING_SHIPMENT;
     }
 
     public boolean canBuyerConfirmCompletion(String deliveryMethod) {

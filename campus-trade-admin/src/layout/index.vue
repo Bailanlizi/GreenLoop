@@ -27,6 +27,10 @@
           <el-icon><Van /></el-icon>
           <span>配送管理</span>
         </el-menu-item>
+        <el-menu-item index="/finance-management">
+          <el-icon><Coin /></el-icon>
+          <span>资金管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -54,7 +58,7 @@
 <script setup>
 import { useAuthStore } from '../stores/authStore';
 import { useRouter } from 'vue-router';
-import { DataLine, User, Goods, Tickets, Location, Van, ArrowDown } from '@element-plus/icons-vue';
+import { DataLine, User, Goods, Tickets, Location, Van, ArrowDown, Coin } from '@element-plus/icons-vue';
 
 const authStore = useAuthStore();
 const router = useRouter();

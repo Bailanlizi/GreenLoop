@@ -16,6 +16,7 @@
         <result property="shippingProvider" column="shipping_provider"/>
         <result property="trackingNumber" column="tracking_number"/>
         <result property="createTime" column="create_time"/>
+        <result property="paymentDeadline" column="payment_deadline"/>
         <result property="productTitle" column="product_title"/>
         <result property="productImage" column="cover_image"/>
         <result property="buyerNickname" column="buyer_nickname"/>
@@ -42,6 +43,10 @@
         WHERE o.id = #{orderId}
     </select>
 
+    <select id="findOrderByIdForUpdate" resultMap="OrderWithDetails">
+        SELECT * FROM orders WHERE id = #{orderId} FOR UPDATE
+    </select>
+
     <select id="findOrdersByBuyerId" resultMap="OrderWithDetails">
         SELECT o.*, p.title as product_title, p.cover_image, seller.nickname as seller_nickname, ml.name as location_name,
                ua.recipient_name, ua.phone, CONCAT(ua.province, ' ', ua.city, ' ', ua.district, ' ', ua.detailed_address) as full_address
@@ -59,8 +64,8 @@
     </select>
 
     <insert id="insertOrder" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO orders(product_id, buyer_id, seller_id, order_status, total_price, delivery_method, meetup_location_id, meetup_time_slot, shipping_address_id)
-        VALUES(#{productId}, #{buyerId}, #{sellerId}, #{orderStatus}, #{totalPrice}, #{deliveryMethod}, #{meetupLocationId}, #{meetupTimeSlot}, #{shippingAddressId})
+        INSERT INTO orders(product_id, buyer_id, seller_id, order_status, total_price, delivery_method, meetup_location_id, meetup_time_slot, shipping_address_id, payment_deadline)
+        VALUES(#{productId}, #{buyerId}, #{sellerId}, #{orderStatus}, #{totalPrice}, #{deliveryMethod}, #{meetupLocationId}, #{meetupTimeSlot}, #{shippingAddressId}, #{paymentDeadline})
     </insert>
 
     <update id="updateOrderStatusIfCurrent">
@@ -98,6 +103,12 @@
         WHERE create_time >= CURDATE() - INTERVAL #{days} DAY
         GROUP BY DATE(create_time)
         ORDER BY date ASC
+    </select>
+
+    <select id="findExpiredPendingPaymentIds" resultType="string">
+        SELECT id FROM orders
+        WHERE order_status = 'PENDING_PAYMENT' AND payment_deadline &lt;= NOW()
+        ORDER BY payment_deadline ASC LIMIT #{limit}
     </select>
 
     <update id="markOrderShipped">

@@ -180,7 +180,7 @@ const submitOrder = async () => {
     submitting.value = true;
     try {
         await createOrder(form);
-        ElMessage.success('订单创建成功！');
+        ElMessage.success('订单创建成功，请在30分钟内完成支付');
         router.push(`/dashboard/purchases`);
     } catch (error) {
         // 错误已由 axios 拦截器统一处理

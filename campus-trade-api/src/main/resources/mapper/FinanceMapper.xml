@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.trade.mapper.FinanceMapper">
+
+    <insert id="insertAccountIfAbsent">
+        INSERT IGNORE INTO account(user_id, available_balance, frozen_balance, status, version)
+        VALUES(#{userId}, 0.00, 0.00, 'ACTIVE', 0)
+    </insert>
+
+    <select id="findAccountByUserId" resultType="com.campus.trade.entity.Account">
+        SELECT * FROM account WHERE user_id = #{userId}
+    </select>
+
+    <select id="findAccountByUserIdForUpdate" resultType="com.campus.trade.entity.Account">
+        SELECT * FROM account WHERE user_id = #{userId} FOR UPDATE
+    </select>
+
+    <update id="creditAvailable">
+        UPDATE account
+        SET available_balance = available_balance + #{amount}, version = version + 1
+        WHERE id = #{accountId} AND version = #{version} AND status = 'ACTIVE'
+    </update>
+
+    <update id="freezeBalance">
+        UPDATE account
+        SET available_balance = available_balance - #{amount}, frozen_balance = frozen_balance + #{amount}, version = version + 1
+        WHERE id = #{accountId} AND version = #{version} AND status = 'ACTIVE' AND available_balance &gt;= #{amount}
+    </update>
+
+    <update id="refundFrozen">
+        UPDATE account
+        SET available_balance = available_balance + #{amount}, frozen_balance = frozen_balance - #{amount}, version = version + 1
+        WHERE id = #{accountId} AND version = #{version} AND status = 'ACTIVE' AND frozen_balance &gt;= #{amount}
+    </update>
+
+    <update id="debitFrozen">
+        UPDATE account
+        SET frozen_balance = frozen_balance - #{amount}, version = version + 1
+        WHERE id = #{accountId} AND version = #{version} AND status = 'ACTIVE' AND frozen_balance &gt;= #{amount}
+    </update>
+
+    <insert id="insertAccountFlow" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO account_flow(flow_no, account_id, user_id, business_type, business_no,
+            available_change, frozen_change, available_before, available_after,
+            frozen_before, frozen_after, remark)
+        VALUES(#{flowNo}, #{accountId}, #{userId}, #{businessType}, #{businessNo},
+            #{availableChange}, #{frozenChange}, #{availableBefore}, #{availableAfter},
+            #{frozenBefore}, #{frozenAfter}, #{remark})
+    </insert>
+
+    <select id="findFlowsByUserId" resultType="com.campus.trade.entity.AccountFlow">
+        SELECT * FROM account_flow
+        WHERE user_id = #{userId}
+        <if test="businessType != null and businessType != ''">AND business_type = #{businessType}</if>
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insertRechargeOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO recharge_order(recharge_no, user_id, request_id, amount, status, success_time)
+        VALUES(#{rechargeNo}, #{userId}, #{requestId}, #{amount}, #{status}, NOW())
+    </insert>
+
+    <select id="findRechargeByRequest" resultType="com.campus.trade.entity.RechargeOrder">
+        SELECT * FROM recharge_order WHERE user_id = #{userId} AND request_id = #{requestId}
+    </select>
+
+    <select id="findRechargesByUserId" resultType="com.campus.trade.entity.RechargeOrder">
+        SELECT * FROM recharge_order WHERE user_id = #{userId} ORDER BY create_time DESC
+    </select>
+
+    <insert id="insertPaymentOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO payment_order(payment_no, order_id, buyer_id, request_id, amount, status, paid_time)
+        VALUES(#{paymentNo}, #{orderId}, #{buyerId}, #{requestId}, #{amount}, #{status}, NOW())
+    </insert>
+
+    <select id="findPaymentByRequest" resultType="com.campus.trade.entity.PaymentOrder">
+        SELECT * FROM payment_order WHERE buyer_id = #{buyerId} AND request_id = #{requestId}
+    </select>
+
+    <select id="findPaymentByOrderId" resultType="com.campus.trade.entity.PaymentOrder">
+        SELECT * FROM payment_order WHERE order_id = #{orderId}
+    </select>
+
+    <update id="updatePaymentStatus">
+        UPDATE payment_order SET status = #{targetStatus}
+        WHERE order_id = #{orderId} AND status = #{currentStatus}
+    </update>
+
+    <insert id="insertFreezeRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO account_freeze_record(freeze_no, order_id, payment_no, account_id, user_id, amount, status)
+        VALUES(#{freezeNo}, #{orderId}, #{paymentNo}, #{accountId}, #{userId}, #{amount}, #{status})
+    </insert>
+
+    <update id="updateFreezeStatus">
+        UPDATE account_freeze_record SET status = #{targetStatus}
+        WHERE order_id = #{orderId} AND status = #{currentStatus}
+    </update>
+
+    <insert id="insertRefundOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO refund_order(refund_no, order_id, payment_no, buyer_id, amount, status, success_time)
+        VALUES(#{refundNo}, #{orderId}, #{paymentNo}, #{buyerId}, #{amount}, #{status}, NOW())
+    </insert>
+
+    <select id="findRefundByOrderId" resultType="com.campus.trade.entity.RefundOrder">
+        SELECT * FROM refund_order WHERE order_id = #{orderId}
+    </select>
+
+    <insert id="insertSettlementOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO settlement_order(settlement_no, order_id, payment_no, buyer_id, seller_id, amount, status, success_time)
+        VALUES(#{settlementNo}, #{orderId}, #{paymentNo}, #{buyerId}, #{sellerId}, #{amount}, #{status}, NOW())
+    </insert>
+
+    <select id="findSettlementByOrderId" resultType="com.campus.trade.entity.SettlementOrder">
+        SELECT * FROM settlement_order WHERE order_id = #{orderId}
+    </select>
+
+    <select id="findAccountsForAdmin" resultType="com.campus.trade.entity.Account">
+        SELECT a.*, u.username, u.nickname FROM account a JOIN user u ON a.user_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (u.username LIKE CONCAT('%', #{keyword}, '%') OR u.nickname LIKE CONCAT('%', #{keyword}, '%') OR CAST(a.user_id AS CHAR) = #{keyword})
+            </if>
+            <if test="status != null and status != ''">AND a.status = #{status}</if>
+        </where>
+        ORDER BY a.create_time DESC
+    </select>
+
+    <select id="findPaymentsForAdmin" resultType="com.campus.trade.entity.PaymentOrder">
+        SELECT p.*, u.nickname AS buyer_nickname FROM payment_order p JOIN user u ON p.buyer_id = u.id
+        <where>
+            <if test="orderId != null and orderId != ''">p.order_id = #{orderId}</if>
+            <if test="status != null and status != ''">AND p.status = #{status}</if>
+        </where>
+        ORDER BY p.create_time DESC
+    </select>
+
+    <select id="findRefundsForAdmin" resultType="com.campus.trade.entity.RefundOrder">
+        SELECT r.*, u.nickname AS buyer_nickname FROM refund_order r JOIN user u ON r.buyer_id = u.id
+        <where>
+            <if test="orderId != null and orderId != ''">r.order_id = #{orderId}</if>
+            <if test="status != null and status != ''">AND r.status = #{status}</if>
+        </where>
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="findSettlementsForAdmin" resultType="com.campus.trade.entity.SettlementOrder">
+        SELECT s.*, buyer.nickname AS buyer_nickname, seller.nickname AS seller_nickname
+        FROM settlement_order s JOIN user buyer ON s.buyer_id = buyer.id JOIN user seller ON s.seller_id = seller.id
+        <where>
+            <if test="orderId != null and orderId != ''">s.order_id = #{orderId}</if>
+            <if test="status != null and status != ''">AND s.status = #{status}</if>
+        </where>
+        ORDER BY s.create_time DESC
+    </select>
+
+    <select id="findFlowsForAdmin" resultType="com.campus.trade.entity.AccountFlow">
+        SELECT f.*, u.username, u.nickname FROM account_flow f JOIN user u ON f.user_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                (u.username LIKE CONCAT('%', #{keyword}, '%') OR u.nickname LIKE CONCAT('%', #{keyword}, '%') OR f.business_no = #{keyword})
+            </if>
+            <if test="businessType != null and businessType != ''">AND f.business_type = #{businessType}</if>
+        </where>
+        ORDER BY f.create_time DESC
+    </select>
+</mapper>

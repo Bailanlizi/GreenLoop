@@ -32,9 +32,9 @@ const orders = ref([]);
 const loading = ref(false);
 const filters = reactive({ orderId: '', deliveryMethod: '' });
 const pagination = reactive({ page: 1, size: 10, total: 0 });
-const statusMap = { AWAITING_MEETUP: '待交易', AWAITING_SHIPMENT: '待发货', SHIPPED: '已发货', COMPLETED: '已完成', CANCELLED: '已取消' };
+const statusMap = { PENDING_PAYMENT: '待支付', AWAITING_MEETUP: '待交易', AWAITING_SHIPMENT: '待发货', SHIPPED: '已发货', COMPLETED: '已完成', CANCELLED: '已取消' };
 const formatStatus = (status) => statusMap[status] || '未知';
-const canForceCancel = (order) => ['AWAITING_MEETUP', 'AWAITING_SHIPMENT'].includes(order.orderStatus);
+const canForceCancel = (order) => ['PENDING_PAYMENT', 'AWAITING_MEETUP', 'AWAITING_SHIPMENT'].includes(order.orderStatus);
 
 const fetchOrders = async () => {
   loading.value = true;

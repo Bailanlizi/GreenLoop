@@ -3,7 +3,9 @@ package com.campus.trade.controller;
 import com.campus.trade.common.Result;
 import com.campus.trade.dto.CreateOrderDTO;
 import com.campus.trade.dto.ShipmentDTO;
+import com.campus.trade.dto.PaymentRequest;
 import com.campus.trade.entity.Order;
+import com.campus.trade.entity.PaymentOrder;
 import com.campus.trade.exception.CustomException;
 import com.campus.trade.security.AuthenticatedUser;
 import com.campus.trade.service.OrderService;
@@ -53,6 +55,17 @@ public class OrderController {
     @PostMapping("/{orderId}/cancel")
     public Result<Order> cancelOrder(@PathVariable String orderId, @AuthenticationPrincipal AuthenticatedUser user) {
         return Result.success(orderService.cancelOrder(orderId, getUserId(user)));
+    }
+
+    @PostMapping("/{orderId}/pay")
+    public Result<PaymentOrder> payOrder(@PathVariable String orderId, @Valid @RequestBody PaymentRequest request,
+                                         @AuthenticationPrincipal AuthenticatedUser user) {
+        return Result.success(orderService.payOrder(orderId, getUserId(user), request));
+    }
+
+    @GetMapping("/{orderId}/payment")
+    public Result<PaymentOrder> getPayment(@PathVariable String orderId, @AuthenticationPrincipal AuthenticatedUser user) {
+        return Result.success(orderService.getPayment(orderId, getUserId(user)));
     }
 
     @PostMapping("/{orderId}/confirm-completion")

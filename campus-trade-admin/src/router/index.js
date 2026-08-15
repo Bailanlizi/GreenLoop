@@ -49,6 +49,12 @@ const routes = [
         name: 'DeliveryManagement',
         component: () => import('../views/delivery/index.vue'),
         meta: { title: '配送管理', requiresAuth: true }
+      },
+      {
+        path: 'finance-management',
+        name: 'FinanceManagement',
+        component: () => import('../views/finance/index.vue'),
+        meta: { title: '资金管理', requiresAuth: true }
       }
     ]
   }

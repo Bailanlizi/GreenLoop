@@ -9,6 +9,7 @@ import java.util.List;
 @Mapper
 public interface OrderMapper {
     Order findOrderById(String orderId);
+    Order findOrderByIdForUpdate(String orderId);
     List<Order> findOrdersByBuyerId(String buyerId);
     List<Order> findOrdersBySellerId(String sellerId);
     void insertOrder(Order order);
@@ -25,5 +26,6 @@ public interface OrderMapper {
     long countTotalOrders();
     long countOrdersByStatus(@Param("status") String status);
     List<DailyStatsDTO> countOrderTrends(@Param("days") int days);
+    List<String> findExpiredPendingPaymentIds(@Param("limit") int limit);
 
 }

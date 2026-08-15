@@ -8,6 +8,7 @@ import com.campus.trade.exception.CustomException;
 import com.campus.trade.mapper.OrderMapper;
 import com.campus.trade.mapper.ProductMapper;
 import com.campus.trade.service.NotificationService;
+import com.campus.trade.service.FinanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,12 +27,14 @@ class OrderServiceImplTest {
     private OrderMapper orderMapper;
     private ProductMapper productMapper;
     private OrderServiceImpl orderService;
+    private FinanceService financeService;
 
     @BeforeEach
     void setUp() {
         orderMapper = mock(OrderMapper.class);
         productMapper = mock(ProductMapper.class);
-        orderService = new OrderServiceImpl(orderMapper, productMapper, mock(NotificationService.class));
+        financeService = mock(FinanceService.class);
+        orderService = new OrderServiceImpl(orderMapper, productMapper, mock(NotificationService.class), financeService);
     }
 
     @Test
@@ -49,7 +52,8 @@ class OrderServiceImplTest {
         orderService.createOrder("buyer-1", request);
 
         verify(productMapper).lockProductIfAvailable("product-1");
-        verify(orderMapper).insertOrder(any(Order.class));
+        verify(orderMapper).insertOrder(org.mockito.ArgumentMatchers.argThat(order ->
+                "PENDING_PAYMENT".equals(order.getOrderStatus()) && order.getPaymentDeadline() != null));
     }
 
     @Test
@@ -64,31 +68,33 @@ class OrderServiceImplTest {
     @Test
     void buyerCanCancelAwaitingShipmentAndReleaseProduct() {
         Order order = order("order-1", "buyer-1", "seller-1", "product-1", "AWAITING_SHIPMENT", "SHIPPING");
-        when(orderMapper.findOrderById("order-1")).thenReturn(order);
+        when(orderMapper.findOrderByIdForUpdate("order-1")).thenReturn(order);
         when(orderMapper.updateOrderStatusIfCurrent("order-1", "AWAITING_SHIPMENT", "CANCELLED")).thenReturn(1);
         when(productMapper.updateProductStatusIfCurrent("product-1", "LOCKED", "AVAILABLE")).thenReturn(1);
 
         orderService.cancelOrder("order-1", "buyer-1");
 
+        verify(financeService).refundPaidOrder(order);
         verify(productMapper).updateProductStatusIfCurrent("product-1", "LOCKED", "AVAILABLE");
     }
 
     @Test
     void buyerCanOnlyConfirmShippedDeliveryOrder() {
         Order order = order("order-1", "buyer-1", "seller-1", "product-1", "SHIPPED", "SHIPPING");
-        when(orderMapper.findOrderById("order-1")).thenReturn(order);
+        when(orderMapper.findOrderByIdForUpdate("order-1")).thenReturn(order);
         when(orderMapper.updateOrderStatusIfCurrent("order-1", "SHIPPED", "COMPLETED")).thenReturn(1);
         when(productMapper.updateProductStatusIfCurrent("product-1", "LOCKED", "SOLD")).thenReturn(1);
 
         orderService.confirmCompletion("order-1", "buyer-1");
 
+        verify(financeService).settleOrder(order);
         verify(productMapper).updateProductStatusIfCurrent("product-1", "LOCKED", "SOLD");
     }
 
     @Test
     void onlySellerCanShipOrder() {
         Order order = order("order-1", "buyer-1", "seller-1", "product-1", "AWAITING_SHIPMENT", "SHIPPING");
-        when(orderMapper.findOrderById("order-1")).thenReturn(order);
+        when(orderMapper.findOrderByIdForUpdate("order-1")).thenReturn(order);
 
         assertThrows(CustomException.class, () -> orderService.shipOrder("order-1", "buyer-1", new ShipmentDTO("顺丰", "SF123")));
 

@@ -17,6 +17,7 @@ public class Order implements Serializable {
     private Integer meetupLocationId;
     private String meetupTimeSlot;
     private Date createTime;
+    private Date paymentDeadline;
     private Long shippingAddressId;
     private String shippingProvider;
     private String trackingNumber;
@@ -53,6 +54,8 @@ public class Order implements Serializable {
     public void setMeetupTimeSlot(String meetupTimeSlot) { this.meetupTimeSlot = meetupTimeSlot; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
+    public Date getPaymentDeadline() { return paymentDeadline; }
+    public void setPaymentDeadline(Date paymentDeadline) { this.paymentDeadline = paymentDeadline; }
     public String getProductTitle() { return productTitle; }
     public void setProductTitle(String productTitle) { this.productTitle = productTitle; }
     public String getProductImage() { return productImage; }

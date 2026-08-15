@@ -83,7 +83,7 @@ const handleShip = async () => {
 };
 
 const goToProduct = (id) => router.push(`/product/${id}`);
-const statusMap = { AWAITING_MEETUP: '待交易', AWAITING_SHIPMENT: '待发货', SHIPPED: '已发货', COMPLETED: '已完成', CANCELLED: '已取消' };
+const statusMap = { PENDING_PAYMENT: '待买家支付', AWAITING_MEETUP: '待交易', AWAITING_SHIPMENT: '待发货', SHIPPED: '已发货', COMPLETED: '已完成', CANCELLED: '已取消' };
 const formatStatus = (status) => statusMap[status] || '未知';
 onMounted(fetchOrders);
 </script>

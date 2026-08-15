@@ -5,13 +5,16 @@ import com.campus.trade.domain.ProductStatus;
 import com.campus.trade.dto.CreateOrderDTO;
 import com.campus.trade.dto.DeliveryStatsDTO;
 import com.campus.trade.dto.PageResult;
+import com.campus.trade.dto.PaymentRequest;
 import com.campus.trade.dto.ShipmentDTO;
 import com.campus.trade.entity.Order;
 import com.campus.trade.entity.Product;
+import com.campus.trade.entity.PaymentOrder;
 import com.campus.trade.exception.CustomException;
 import com.campus.trade.mapper.OrderMapper;
 import com.campus.trade.mapper.ProductMapper;
 import com.campus.trade.service.NotificationService;
+import com.campus.trade.service.FinanceService;
 import com.campus.trade.service.OrderService;
 import com.github.pagehelper.PageHelper;
 import org.springframework.cache.annotation.CacheEvict;
@@ -23,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Date;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -30,11 +34,14 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final ProductMapper productMapper;
     private final NotificationService notificationService;
+    private final FinanceService financeService;
 
-    public OrderServiceImpl(OrderMapper orderMapper, ProductMapper productMapper, NotificationService notificationService) {
+    public OrderServiceImpl(OrderMapper orderMapper, ProductMapper productMapper, NotificationService notificationService,
+                            FinanceService financeService) {
         this.orderMapper = orderMapper;
         this.productMapper = productMapper;
         this.notificationService = notificationService;
+        this.financeService = financeService;
     }
 
     @Override
@@ -66,20 +73,29 @@ public class OrderServiceImpl implements OrderService {
             if (request.getMeetupLocationId() == null) {
                 throw new CustomException("请选择交易地点");
             }
-            order.setOrderStatus(OrderStatus.AWAITING_MEETUP.name());
             order.setMeetupLocationId(request.getMeetupLocationId());
         } else {
             if (request.getShippingAddressId() == null) {
                 throw new CustomException("请选择收货地址");
             }
-            order.setOrderStatus(OrderStatus.AWAITING_SHIPMENT.name());
             order.setShippingAddressId(request.getShippingAddressId());
         }
 
+        order.setOrderStatus(OrderStatus.PENDING_PAYMENT.name());
+        order.setPaymentDeadline(new Date(System.currentTimeMillis() + 30L * 60L * 1000L));
+
         orderMapper.insertOrder(order);
-        notificationService.createNotification(product.getSellerId(), "NEW_ORDER",
-                String.format("您发布的商品 “%s” 已被锁定，等待履约。", product.getTitle()), order.getId());
         return orderMapper.findOrderById(order.getId());
+    }
+
+    @Override
+    public PaymentOrder payOrder(String orderId, String buyerId, PaymentRequest request) {
+        return financeService.payOrder(orderId, buyerId, request);
+    }
+
+    @Override
+    public PaymentOrder getPayment(String orderId, String userId) {
+        return financeService.getPayment(orderId, userId);
     }
 
     @Override
@@ -102,7 +118,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @CacheEvict(value = {"order", "products", "product"}, allEntries = true)
     public Order cancelOrder(String orderId, String buyerId) {
-        Order order = requireOrder(orderId);
+        Order order = requireOrderForUpdate(orderId);
         requireBuyer(order, buyerId);
         OrderStatus currentStatus = OrderStatus.valueOf(order.getOrderStatus());
         if (!currentStatus.canBuyerCancel()) {
@@ -116,12 +132,13 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @CacheEvict(value = {"order", "products", "product"}, allEntries = true)
     public Order confirmCompletion(String orderId, String buyerId) {
-        Order order = requireOrder(orderId);
+        Order order = requireOrderForUpdate(orderId);
         requireBuyer(order, buyerId);
         OrderStatus currentStatus = OrderStatus.valueOf(order.getOrderStatus());
         if (!currentStatus.canBuyerConfirmCompletion(order.getDeliveryMethod())) {
             throw new CustomException("当前订单状态不允许确认完成");
         }
+        financeService.settleOrder(order);
         updateOrderOrThrow(order, currentStatus, OrderStatus.COMPLETED);
         if (productMapper.updateProductStatusIfCurrent(order.getProductId(), ProductStatus.LOCKED.name(), ProductStatus.SOLD.name()) != 1) {
             throw new CustomException("商品状态异常，无法完成订单");
@@ -134,7 +151,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @CacheEvict(value = "order", key = "#orderId")
     public Order shipOrder(String orderId, String sellerId, ShipmentDTO shipmentDTO) {
-        Order order = requireOrder(orderId);
+        Order order = requireOrderForUpdate(orderId);
         if (!Objects.equals(order.getSellerId(), sellerId)) {
             throw new CustomException("无权为此订单发货");
         }
@@ -152,7 +169,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @CacheEvict(value = {"order", "products", "product"}, allEntries = true)
     public Order forceCancelOrder(String orderId) {
-        Order order = requireOrder(orderId);
+        Order order = requireOrderForUpdate(orderId);
         OrderStatus currentStatus = OrderStatus.valueOf(order.getOrderStatus());
         if (!currentStatus.canBuyerCancel()) {
             throw new CustomException("仅未履约订单可强制取消");
@@ -197,6 +214,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void cancelAndRelease(Order order, OrderStatus currentStatus) {
+        if (currentStatus == OrderStatus.AWAITING_MEETUP || currentStatus == OrderStatus.AWAITING_SHIPMENT) {
+            financeService.refundPaidOrder(order);
+        }
         updateOrderOrThrow(order, currentStatus, OrderStatus.CANCELLED);
         if (productMapper.updateProductStatusIfCurrent(order.getProductId(), ProductStatus.LOCKED.name(), ProductStatus.AVAILABLE.name()) != 1) {
             throw new CustomException("商品状态异常，无法释放商品");
@@ -214,6 +234,12 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             throw new CustomException("订单不存在");
         }
+        return order;
+    }
+
+    private Order requireOrderForUpdate(String orderId) {
+        Order order = orderMapper.findOrderByIdForUpdate(orderId);
+        if (order == null) throw new CustomException("订单不存在");
         return order;
     }
 
@@ -245,6 +271,7 @@ public class OrderServiceImpl implements OrderService {
 
     private String formatOrderStatus(String status) {
         switch (OrderStatus.valueOf(status)) {
+            case PENDING_PAYMENT: return "待支付";
             case AWAITING_MEETUP: return "待交易";
             case AWAITING_SHIPMENT: return "待发货";
             case SHIPPED: return "已发货";

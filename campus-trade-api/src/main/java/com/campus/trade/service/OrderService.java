@@ -4,6 +4,8 @@ import com.campus.trade.dto.CreateOrderDTO;
 import com.campus.trade.dto.DeliveryStatsDTO;
 import com.campus.trade.dto.ShipmentDTO;
 import com.campus.trade.dto.PageResult; // 【新增】
+import com.campus.trade.dto.PaymentRequest;
+import com.campus.trade.entity.PaymentOrder;
 import com.campus.trade.entity.Order;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
@@ -11,6 +13,8 @@ import java.io.IOException;
 
 public interface OrderService {
     Order createOrder(String buyerId, CreateOrderDTO createOrderDTO);
+    PaymentOrder payOrder(String orderId, String buyerId, PaymentRequest request);
+    PaymentOrder getPayment(String orderId, String userId);
     Order getOrderDetails(String orderId);
     List<Order> getMyPurchases(String userId);
     List<Order> getMySales(String userId);

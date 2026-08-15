@@ -24,6 +24,7 @@ const routes = [
         { path: 'favorites', name: 'MyFavorites', component: () => import('../components/MyFavorites.vue'), meta: { title: '我的收藏' } },
         { path: 'demands', name: 'MyDemands', component: () => import('../components/MyDemands.vue') },
         { path: 'notifications', name: 'MyNotifications', component: () => import('../components/MyNotifications.vue') },
+        { path: 'wallet', name: 'MyWallet', component: () => import('../components/MyWallet.vue'), meta: { title: '资金账户' } },
         { path: 'profile', name: 'UserProfile', component: () => import('../components/UserProfile.vue') },
         { path: 'addresses', name: 'MyAddresses', component: () => import('../components/MyAddresses.vue'), meta: { title: '收货地址' } }
       ]
