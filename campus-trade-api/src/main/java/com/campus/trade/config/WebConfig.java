@@ -1,14 +1,29 @@
 package com.campus.trade.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.file.Paths;
 
 /**
  * Spring MVC 的额外配置
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    private final String uploadResourceLocation;
+
+    public WebConfig(@Value("${file.upload-dir:uploads}") String uploadDir) {
+        // 与 FileStorageServiceImpl 使用同一配置，避免测试环境写入
+        // uploads-test、访问时却固定从 uploads 读取。
+        this.uploadResourceLocation = Paths.get(uploadDir)
+                .toAbsolutePath()
+                .normalize()
+                .toUri()
+                .toString();
+    }
 
     /**
      * 配置静态资源映射。
@@ -17,10 +32,7 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 【最终修正】当浏览器请求 /uploads/ 开头的URL时，
-        // Spring Boot会去项目的运行根目录下的 /uploads/ 文件夹中查找文件。
-        // "file:uploads/" 这种写法是健壮且跨平台的。
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/");
+                .addResourceLocations(uploadResourceLocation);
     }
 }

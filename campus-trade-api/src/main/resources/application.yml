@@ -16,7 +16,7 @@ spring:
     database: 0
   web:
     resources:
-      static-locations: file:${file.upload.path} # 允许通过URL访问上传的文件
+      static-locations: file:${file.upload-dir}/ # 允许通过URL访问上传的文件
   servlet:
     multipart:
       max-file-size: 10MB
