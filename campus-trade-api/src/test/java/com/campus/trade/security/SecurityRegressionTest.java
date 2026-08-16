@@ -1,7 +1,7 @@
 package com.campus.trade.security;
 
-import com.campus.trade.controller.AdminController;
 import com.campus.trade.service.AddressService;
+import com.campus.trade.service.CategoryService;
 import com.campus.trade.service.UserService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -32,9 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "security.cors.allowed-origins=http://localhost:5173,http://localhost:8000",
         "orders.payment-expiration-enabled=false",
         "spring.mail.host=localhost",
-        "spring.datasource.username=test",
-        "spring.datasource.password=test"
+        "security.bootstrap-admin.enabled=false"
 })
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class SecurityRegressionTest {
     private static final String OLD_SECRET = "old-secret-that-must-not-be-accepted-after-immediate-jwt-rotation-2025";
@@ -43,6 +45,7 @@ class SecurityRegressionTest {
     @Autowired private JwtUtil jwtUtil;
     @MockBean private UserService userService;
     @MockBean private AddressService addressService;
+    @MockBean private CategoryService categoryService;
     @MockBean private UserDetailsServiceImpl userDetailsService;
 
     private AuthenticatedUser user;
@@ -86,6 +89,31 @@ class SecurityRegressionTest {
         when(userDetailsService.loadUserByUsername("disabled")).thenReturn(disabled);
         mockMvc.perform(get("/admin/users").header("Authorization", "Bearer " + jwtUtil.generateToken(disabled)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void rejectsRegularUsersAcrossAllAdministratorAreas() throws Exception {
+        String token = jwtUtil.generateToken(user);
+        for (String path : new String[]{
+                "/admin/users", "/admin/products", "/admin/orders", "/admin/locations",
+                "/admin/delivery/stats", "/admin/finance/accounts", "/admin/stats/summary"
+        }) {
+            mockMvc.perform(get(path).header("Authorization", "Bearer " + token))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void restrictsCategoryCacheMaintenanceToAdministrators() throws Exception {
+        mockMvc.perform(post("/categories/clear-cache"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/categories/clear-cache")
+                        .header("Authorization", "Bearer " + jwtUtil.generateToken(user)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/categories/clear-cache")
+                        .header("Authorization", "Bearer " + jwtUtil.generateToken(admin)))
+                .andExpect(status().isOk());
+        verify(categoryService).clearCategoryCache();
     }
 
     @Test

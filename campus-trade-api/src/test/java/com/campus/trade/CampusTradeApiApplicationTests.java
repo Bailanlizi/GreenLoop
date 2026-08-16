@@ -2,8 +2,13 @@ package com.campus.trade;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(properties = "orders.payment-expiration-enabled=false")
+@ActiveProfiles("test")
+@SpringBootTest(properties = {
+        "orders.payment-expiration-enabled=false",
+        "security.bootstrap-admin.enabled=false"
+})
 class CampusTradeApiApplicationTests {
 
     @Test

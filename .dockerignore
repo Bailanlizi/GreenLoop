@@ -1,0 +1,15 @@
+.git/
+.github/
+.idea/
+.vscode/
+.workbuddy/
+**/node_modules/
+**/dist/
+**/target/
+**/uploads/
+uploads/
+uploads-test/
+**/application.yml
+**/application.properties
+.env
+*.log

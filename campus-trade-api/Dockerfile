@@ -1,6 +1,13 @@
-FROM openjdk:17-jdk-slim
-LABEL maintainer="fennemalakeshia@gmail.com"
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /workspace
+COPY pom.xml .
+RUN mvn -B -q dependency:go-offline
+COPY src ./src
+RUN mvn -B -q -DskipTests package
+
+FROM eclipse-temurin:17-jre
 WORKDIR /app
-COPY target/campus-trade-api-6773-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /workspace/target/campus-trade-api-*.jar app.jar
+RUN mkdir -p /app/uploads
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

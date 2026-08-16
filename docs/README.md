@@ -3,8 +3,8 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.18-green)](https://spring.io/projects/spring-boot)
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-blue)](https://vuejs.org/)
 [![Element Plus](https://img.shields.io/badge/Element%20Plus-2.x-purple)](https://element-plus.org/)
-[![Java 21](https://img.shields.io/badge/Java-21-orange)](https://www.oracle.com/java/technologies/downloads/#java21)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E=16.x-green)](https://nodejs.org/)
+[![Java 17](https://img.shields.io/badge/Java-17-orange)](https://adoptium.net/temurin/releases/?version=17)
+[![Node.js](https://img.shields.io/badge/Node.js-20-green)](https://nodejs.org/)
 
 > **技术栈：** Spring Boot · MySQL · Redis · MyBatis · Vue 3 · Vite
 >
@@ -106,8 +106,7 @@ GreenLoop 不是单纯的二手交易 Demo，而是以**金融科技系统**为�
 ## 快速开始
 
 ### 环境要求
-- JDK 21（注：`spring-boot-starter-parent` 为 2.7.18，官方仅支持到 Java 17；当前可在 21 上运行，后续计划统一为「Spring Boot 3.2+ + Java 21」或收敛到 Java 17，详见《开发基准》）
-- Maven 3.6+ · Node.js ≥ 16.x · MySQL 8.x · Redis 6.x+
+- JDK 17 · Maven 3.6+ · Node.js 20（根目录 `.nvmrc`）· MySQL 8.x · Redis 6.x+
 
 ### 步骤 1：数据库初始化
 ```sql
@@ -134,14 +133,25 @@ cd campus-trade-web && npm install && npm run dev # 用户端
 cd campus-trade-admin && npm install && npm run dev # 管理端
 ```
 
+### Docker Compose（推荐用于完整环境）
+
+Docker Desktop 启动后，复制环境变量模板并填写其中的强密码、JWT 密钥和邮件配置：
+
+```powershell
+Copy-Item .env.example .env
+.\scripts\start-local.ps1 up
+```
+
+脚本会启动 MySQL、Redis、后端、用户端和管理端。首次创建的 MySQL 数据卷会自动导入完整建表脚本；已有业务库不要用此方式重建，应按增量脚本升级。常用命令：`.\scripts\start-local.ps1 logs`、`.\scripts\start-local.ps1 down`、`.\scripts\start-local.ps1 build`。
+
 ### 步骤 4：访问与初始管理员
 | 服务 | 地址 |
 |------|------|
 | 后端 API | http://localhost:8080 |
 | 用户端 | http://localhost:5173 |
-| 管理后台 | http://localhost:8000 |
+| 管理后台 | http://localhost:8000/admin/ |
 
-首次管理员由本地 `application.yml` 的 `security.bootstrap-admin` 配置创建。将 `enabled` 设为 `true` 并填写用户名、至少 12 位的强密码和邮箱；当同名用户不存在时，应用启动后只创建一次。创建成功后建议将 `enabled` 改回 `false`。
+首次管理员由本地 `application.yml`（Docker 环境则为 `.env`）的 `security.bootstrap-admin` 配置创建。将 `enabled` 设为 `true` 并填写用户名、至少 12 位的强密码和邮箱；当同名用户不存在时，应用启动后只创建一次。创建成功后建议将 `enabled` 改回 `false`。
 
 ---
 

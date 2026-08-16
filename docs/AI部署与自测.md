@@ -1,7 +1,7 @@
 # AI功能部署与自测
 
 ## 1. 基本依赖
-- JDK 21、Maven、MySQL、Redis（注：项目 `spring-boot-starter-parent` 为 2.7.18，官方仅支持到 Java 17，当前以 Java 21 运行，详见 `开发基准.md`）
+- JDK 17、Maven、MySQL、Redis
 - 已配置 `AI_API_KEY`（或在配置文件中设置 `ai.api-key`）
 
 ## 2. 生产配置建议（简版）
@@ -37,14 +37,14 @@ CREATE TABLE IF NOT EXISTS `product_risks` (
 Linux/macOS:
 ```bash
 export AI_API_KEY="你的Key"
-cd campus-trade-platform/campus-trade-api
+cd campus-trade-api
 mvn spring-boot:run
 ```
 
 Windows PowerShell:
 ```powershell
 $env:AI_API_KEY="你的Key"
-cd campus-trade-platform\campus-trade-api
+cd campus-trade-api
 mvn spring-boot:run
 ```
 

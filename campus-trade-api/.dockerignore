@@ -1,0 +1,5 @@
+target/
+uploads/
+application.yml
+application.properties
+*.log

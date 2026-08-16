@@ -1,0 +1,85 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-campus_trade}
+      MYSQL_USER: ${MYSQL_USER:-greenloop}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./campus-trade-api/src/main/resources/campus_trade.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./campus-trade-api
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-campus_trade}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai"
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-greenloop}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      FILE_UPLOAD_DIR: /app/uploads
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SECURITY_BOOTSTRAP_ADMIN_ENABLED: ${SECURITY_BOOTSTRAP_ADMIN_ENABLED:-false}
+      SECURITY_BOOTSTRAP_ADMIN_USERNAME: ${SECURITY_BOOTSTRAP_ADMIN_USERNAME}
+      SECURITY_BOOTSTRAP_ADMIN_PASSWORD: ${SECURITY_BOOTSTRAP_ADMIN_PASSWORD}
+      SECURITY_BOOTSTRAP_ADMIN_EMAIL: ${SECURITY_BOOTSTRAP_ADMIN_EMAIL}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_BASE_URL: ${AI_BASE_URL}
+      AI_API_KEY: ${AI_API_KEY}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./campus-trade-api/uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./campus-trade-web
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+  admin:
+    build:
+      context: ./campus-trade-admin
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:
+  redis_data:

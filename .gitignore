@@ -26,3 +26,6 @@ campus-trade-admin/dist/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Docker Compose 本地环境变量（仅提交 .env.example）
+.env
