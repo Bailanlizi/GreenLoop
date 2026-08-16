@@ -158,6 +158,7 @@ campus-trade-platform/
 - **订单管理**：订单列表、多条件筛选、发货操作、状态管理、数据导出
 - **配送管理**：批量发货、快递公司管理、运单号录入、订单导出 Excel/CSV
 - **交易地点管理**：增删改查官方推荐的线下交易地点
+- **资金管理（只读）**：账户余额、充值单、支付单、冻结记录、退款单、结算单与资金流水查询（管理端不提供人工调账）
 
 ---
 
@@ -178,7 +179,7 @@ campus-trade-platform/
 
 ### 环境要求
 
-- JDK 21
+- JDK 21（注：项目 `java.version` 配置为 21，但 `spring-boot-starter-parent` 为 2.7.18，官方仅支持到 Java 17。当前可在 21 上运行；后续计划统一为「Spring Boot 3.2+ + Java 21」或收敛到 Java 17，详见 `开发基准.md`）
 - Maven 3.6+
 - Node.js >= 16.x
 - MySQL 8.x
@@ -199,9 +200,19 @@ USE campus_trade;
 SOURCE campus-trade-api/src/main/resources/campus_trade.sql;
 ```
 
+> 说明：`campus_trade.sql` 是**权威建表脚本**，已包含资金账户与流水相关表（`account`、`account_flow`、`recharge_order`、`payment_order`、`account_freeze_record`、`refund_order`、`settlement_order`）。项目根目录的 `campus_trade_test.sql` 为测试库种子脚本，当前尚未同步资金表，请勿用它重建正式库。
+
 ### 步骤 3：配置后端
 
-修改 `campus-trade-api/src/main/resources/application.yml`：
+推荐做法（避免泄露真实密钥）：
+
+1. 复制示例配置：`cp campus-trade-api/src/main/resources/application_example.yml campus-trade-api/src/main/resources/application-local.yml`
+2. 在 `application-local.yml` 中填入本地的数据库密码、Redis 密码、邮箱授权码、JWT 密钥与 AI Key（该文件已被 `.gitignore` 忽略，不会进入仓库）。
+3. 也可通过环境变量覆盖：`SPRING_DATASOURCE_PASSWORD`、`SPRING_REDIS_PASSWORD`、`SPRING_MAIL_PASSWORD`、`JWT_SECRET`、`AI_API_KEY` 等。
+
+> 注意：默认 `application.yml` 仅用于提交通用配置，**不要在其中写入真实密码 / 授权码 / JWT 密钥**。当前示例文件命名为 `application_example.yml`（下划线），并非 Spring Profile 自动加载命名；本地覆盖请使用 `application-local.yml`。
+
+最小可用配置示例（`application-local.yml`）：
 
 ```yaml
 spring:
@@ -284,8 +295,17 @@ npm run dev
 
 ### 安全配置
 
-- **JWT 密钥**: 在 `application.yml` 的 `jwt.secret` 配置，生产环境请使用更长的随机密钥
-- **密码加密**: 使用 BCryptPasswordEncoder，强度为 10
+- **JWT 密钥**: 在 `jwt.secret` 配置，生产环境请使用更长的随机密钥（当前使用 jjwt `0.9.1`，计划升级至 `0.11.x` 并引入密钥轮换）。
+- **密码加密**: 使用 BCryptPasswordEncoder，强度为 10。
+- **CORS**: 当前默认配置为允许任意来源并携带凭据（`allowCredentials(true)` + 通配来源），属于待收紧的安全项；生产环境应改为明确的前端白名单（如 `http://localhost:5173`、`http://localhost:8000`），该收紧工作已在阶段四（P0）规划中。
+- **接口脱敏与字段加密**: 现阶段 phone / email 等敏感字段以明文存储与返回，AES 字段加密与接口脱敏列为阶段四（P4）安全增强项，尚未实现。
+- **操作审计**: 后台关键操作（强制取消订单、账户冻结/解冻、权限变更）的追加式审计日志（`operation_audit_log`）列为阶段四（P1）规划，尚未实现。
+
+### 测试与质量
+
+- 后端测试基于 JUnit 5 + Mockito + Spring Boot Test（含 MockMvc 鉴权/越权回归测试）。
+- 当前测试类 7 个、用例 25 个；覆盖订单状态机、支付幂等、余额不足、冻结/退款/结算、追加式流水快照、越权访问等。
+- 待补强：真实数据库集成测试、多线程并发/乐观锁验证、资金守恒全局断言（系统总余额 = 总充值 − 总退款）。阶段四目标：`mvn test` 用例数 ≥ 30、通过率 100%。
 
 ### 文件上传
 
