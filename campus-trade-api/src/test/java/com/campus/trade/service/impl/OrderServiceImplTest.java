@@ -11,6 +11,8 @@ import com.campus.trade.service.NotificationService;
 import com.campus.trade.service.FinanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 
@@ -99,6 +101,32 @@ class OrderServiceImplTest {
         assertThrows(CustomException.class, () -> orderService.shipOrder("order-1", "buyer-1", new ShipmentDTO("顺丰", "SF123")));
 
         verify(orderMapper, never()).markOrderShipped(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PENDING_PAYMENT", "AWAITING_SHIPMENT", "COMPLETED", "CANCELLED"})
+    void confirmCompletionRejectsIllegalStateWithoutSettlement(String status) {
+        Order order = order("order-1", "buyer-1", "seller-1", "product-1", status, "SHIPPING");
+        when(orderMapper.findOrderByIdForUpdate("order-1")).thenReturn(order);
+
+        assertThrows(CustomException.class, () -> orderService.confirmCompletion("order-1", "buyer-1"));
+
+        verify(financeService, never()).settleOrder(any());
+        verify(orderMapper, never()).updateOrderStatusIfCurrent(any(), any(), any());
+        verify(productMapper, never()).updateProductStatusIfCurrent(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SHIPPED", "COMPLETED", "CANCELLED"})
+    void cancelOrderRejectsFulfilledOrTerminalStateWithoutRefund(String status) {
+        Order order = order("order-1", "buyer-1", "seller-1", "product-1", status, "SHIPPING");
+        when(orderMapper.findOrderByIdForUpdate("order-1")).thenReturn(order);
+
+        assertThrows(CustomException.class, () -> orderService.cancelOrder("order-1", "buyer-1"));
+
+        verify(financeService, never()).refundPaidOrder(any());
+        verify(orderMapper, never()).updateOrderStatusIfCurrent(any(), any(), any());
+        verify(productMapper, never()).updateProductStatusIfCurrent(any(), any(), any());
     }
 
     private CreateOrderDTO shippingRequest(String productId) {

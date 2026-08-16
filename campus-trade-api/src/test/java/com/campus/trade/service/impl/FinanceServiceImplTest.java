@@ -12,6 +12,8 @@ import com.campus.trade.mapper.OrderMapper;
 import com.campus.trade.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
@@ -121,6 +123,47 @@ class FinanceServiceImplTest {
 
         assertThrows(CustomException.class, () -> financeService.payOrder("order-1", "buyer-1", request));
         verify(financeMapper, never()).freezeBalance(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {10, 50, 100})
+    void repeatedPaymentWithSameRequestIdRecordsFundsOnce(int replayCount) {
+        PaymentOrder existing = payment("PY1", "FROZEN");
+        existing.setRequestId("same-payment-request");
+        when(financeMapper.findPaymentByRequest("buyer-1", "same-payment-request"))
+                .thenReturn(existing);
+
+        PaymentRequest request = new PaymentRequest();
+        request.setRequestId("same-payment-request");
+        for (int i = 0; i < replayCount; i++) {
+            assertEquals("PY1", financeService.payOrder("order-1", "buyer-1", request).getPaymentNo());
+        }
+
+        verify(financeMapper, never()).freezeBalance(any(), any(), any());
+        verify(financeMapper, never()).insertPaymentOrder(any());
+        verify(financeMapper, never()).insertFreezeRecord(any());
+        verify(financeMapper, never()).insertAccountFlow(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {10, 50, 100})
+    void repeatedRechargeWithSameRequestIdRecordsFundsOnce(int replayCount) {
+        RechargeOrder existing = new RechargeOrder();
+        existing.setRechargeNo("RC1");
+        existing.setRequestId("same-recharge-request");
+        when(financeMapper.findRechargeByRequest("buyer-1", "same-recharge-request"))
+                .thenReturn(existing);
+
+        RechargeRequest request = new RechargeRequest();
+        request.setRequestId("same-recharge-request");
+        request.setAmount(new BigDecimal("10.00"));
+        for (int i = 0; i < replayCount; i++) {
+            assertEquals("RC1", financeService.recharge("buyer-1", request).getRechargeNo());
+        }
+
+        verify(financeMapper, never()).creditAvailable(any(), any(), any());
+        verify(financeMapper, never()).insertRechargeOrder(any());
+        verify(financeMapper, never()).insertAccountFlow(any());
     }
 
     @Test
