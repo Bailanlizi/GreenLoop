@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Locale;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -54,15 +55,16 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void register(RegisterDTO registerDTO) {
+        String normalizedEmail = registerDTO.getEmail().trim().toLowerCase(Locale.ROOT);
         if (userMapper.findByUsername(registerDTO.getUsername()) != null) {
             throw new CustomException("该学号已被注册");
         }
-        if (userMapper.findByEmail(registerDTO.getEmail()) != null) {
+        if (userMapper.findByEmail(normalizedEmail) != null) {
             throw new CustomException("该邮箱已被注册");
         }
 
         // 【新增】校验验证码
-        String redisKey = EmailServiceImpl.VERIFICATION_CODE_KEY_PREFIX + registerDTO.getEmail();
+        String redisKey = EmailServiceImpl.VERIFICATION_CODE_KEY_PREFIX + normalizedEmail;
         String storedCode = redisTemplate.opsForValue().get(redisKey);
 
         if (storedCode == null) {
@@ -76,7 +78,7 @@ public class UserServiceImpl implements UserService {
         user.setUsername(registerDTO.getUsername());
         user.setNickname(registerDTO.getNickname());
         user.setPassword(passwordEncoder.encode(registerDTO.getPassword()));
-        user.setEmail(registerDTO.getEmail());
+        user.setEmail(normalizedEmail);
         user.setEmailVerified(true); // 验证通过
 
         userMapper.insertUser(user);
