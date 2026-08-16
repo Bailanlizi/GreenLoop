@@ -11,8 +11,9 @@ public class AuthenticatedUser extends User {
     private final String avatar; // 【新增】
 
 
-    public AuthenticatedUser(String username, String password, Collection<? extends GrantedAuthority> authorities, String userId, String nickname, String avatar) { //【修改】
-        super(username, password, authorities);
+    public AuthenticatedUser(String username, String password, boolean enabled,
+                             Collection<? extends GrantedAuthority> authorities, String userId, String nickname, String avatar) {
+        super(username, password, enabled, true, true, true, authorities);
         this.userId = userId;
         this.nickname = nickname;
         this.avatar = avatar; // 【新增】

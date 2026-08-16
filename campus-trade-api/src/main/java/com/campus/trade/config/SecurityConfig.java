@@ -23,11 +23,17 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${security.cors.allowed-origins:http://localhost:5173,http://localhost:8000}")
+    private String allowedOrigins;
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -59,7 +65,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .collect(Collectors.toList()));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -87,6 +96,7 @@ public class SecurityConfig {
                         .antMatchers(HttpMethod.GET, "/users/{id}/profile").permitAll()
                         .antMatchers(HttpMethod.GET, "/locations").permitAll()
                         .antMatchers("/email/send-code").permitAll()
+                        .antMatchers("/categories/clear-cache").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

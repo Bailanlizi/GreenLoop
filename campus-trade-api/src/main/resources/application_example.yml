@@ -43,6 +43,19 @@ jwt:
 
 file:
   upload-dir: uploads/
+  max-upload-size: 5MB
+
+security:
+  cors:
+    allowed-origins: http://localhost:5173,http://localhost:8000
+  bootstrap-admin:
+    enabled: false
+    username: <initial-admin-username>
+    password: <initial-admin-strong-password>
+    email: <initial-admin-email>
+  verification-code:
+    send-cooldown-seconds: 60
+    max-sends-per-hour: 5
 
 ai:
   enabled: false

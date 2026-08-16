@@ -18,11 +18,23 @@ public class CacheInitializer {
     private final CacheManager cacheManager;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final boolean bootstrapAdminEnabled;
+    private final String bootstrapAdminUsername;
+    private final String bootstrapAdminPassword;
+    private final String bootstrapAdminEmail;
 
-    public CacheInitializer(CacheManager cacheManager, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+    public CacheInitializer(CacheManager cacheManager, UserMapper userMapper, PasswordEncoder passwordEncoder,
+                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.enabled:false}") boolean bootstrapAdminEnabled,
+                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.username:}") String bootstrapAdminUsername,
+                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.password:}") String bootstrapAdminPassword,
+                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.email:}") String bootstrapAdminEmail) {
         this.cacheManager = cacheManager;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
+        this.bootstrapAdminEnabled = bootstrapAdminEnabled;
+        this.bootstrapAdminUsername = bootstrapAdminUsername;
+        this.bootstrapAdminPassword = bootstrapAdminPassword;
+        this.bootstrapAdminEmail = bootstrapAdminEmail;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -36,28 +48,34 @@ public class CacheInitializer {
 
         log.info("<<< [缓存初始化] 所有缓存已成功清空。");
 
-        log.info(">>> [管理员初始化] 检查是否存在默认管理员账号...");
-        createDefaultAdminIfNotExists();
+        createBootstrapAdminIfEnabled();
     }
 
-    private void createDefaultAdminIfNotExists() {
-        User admin = userMapper.findByUsername("admin");
+    public void createBootstrapAdminIfEnabled() {
+        if (!bootstrapAdminEnabled) {
+            return;
+        }
+        if (bootstrapAdminUsername.isBlank() || bootstrapAdminEmail.isBlank() || bootstrapAdminPassword.length() < 12
+                || "admin123".equals(bootstrapAdminPassword) || bootstrapAdminPassword.startsWith("<")) {
+            throw new IllegalStateException("启用初始管理员时，必须配置非示例的强密码、用户名和邮箱");
+        }
+        User admin = userMapper.findByUsername(bootstrapAdminUsername);
         if (admin == null) {
-            log.info("--- 创建默认管理员账号...");
+            log.info("--- 创建配置的初始管理员账号: {}", bootstrapAdminUsername);
             User newAdmin = new User();
-            newAdmin.setUsername("admin");
-            newAdmin.setPassword(passwordEncoder.encode("admin123"));
+            newAdmin.setUsername(bootstrapAdminUsername);
+            newAdmin.setPassword(passwordEncoder.encode(bootstrapAdminPassword));
             newAdmin.setNickname("管理员");
             newAdmin.setRole("ADMIN");
             newAdmin.setCreditScore(100);
             newAdmin.setStatus(1);
-            newAdmin.setEmail("admin@example.com");
+            newAdmin.setEmail(bootstrapAdminEmail);
             newAdmin.setEmailVerified(true);
 
             userMapper.insertUserByAdmin(newAdmin);
-            log.info("--- 默认管理员账号创建成功！用户名: admin, 密码: admin123");
+            log.info("--- 初始管理员账号创建成功: {}", bootstrapAdminUsername);
         } else {
-            log.info("--- 默认管理员账号已存在，跳过创建。");
+            log.info("--- 初始管理员账号已存在，跳过创建: {}", bootstrapAdminUsername);
         }
     }
 }

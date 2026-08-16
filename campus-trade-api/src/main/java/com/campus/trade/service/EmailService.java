@@ -1,5 +1,5 @@
 package com.campus.trade.service;
 
 public interface EmailService {
-    void sendVerificationCode(String to);
+    void sendVerificationCode(String to, String clientIp);
 }

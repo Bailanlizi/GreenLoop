@@ -121,11 +121,11 @@ SOURCE campus-trade-api/src/main/resources/campus_trade.sql;
 复制示例配置并填入本地真实值（该文件已被 `.gitignore` 忽略，不进仓库）：
 ```bash
 cp campus-trade-api/src/main/resources/application_example.yml \
-   campus-trade-api/src/main/resources/application-local.yml
+   campus-trade-api/src/main/resources/application.yml
 ```
 或通过环境变量覆盖：`SPRING_DATASOURCE_PASSWORD`、`SPRING_REDIS_PASSWORD`、`SPRING_MAIL_PASSWORD`、`JWT_SECRET`、`AI_API_KEY` 等。
 
-> 默认 `application.yml` 仅提交通用配置，**不要写入真实密码 / 授权码 / JWT 密钥**。
+
 
 ### 步骤 3：启动服务
 ```bash
@@ -134,14 +134,14 @@ cd campus-trade-web && npm install && npm run dev # 用户端
 cd campus-trade-admin && npm install && npm run dev # 管理端
 ```
 
-### 步骤 4：访问与默认账号
+### 步骤 4：访问与初始管理员
 | 服务 | 地址 |
 |------|------|
 | 后端 API | http://localhost:8080 |
 | 用户端 | http://localhost:5173 |
 | 管理后台 | http://localhost:8000 |
 
-默认管理员账号：**admin / admin123**（系统启动时自动创建）。
+首次管理员由本地 `application.yml` 的 `security.bootstrap-admin` 配置创建。将 `enabled` 设为 `true` 并填写用户名、至少 12 位的强密码和邮箱；当同名用户不存在时，应用启动后只创建一次。创建成功后建议将 `enabled` 改回 `false`。
 
 ---
 
@@ -172,7 +172,7 @@ A: 检查邮箱配置：确认 SMTP 已开启（QQ 邮箱需开启 SMTP 并生�
 A: 确保 `uploads` 目录存在且有写入权限，或检查 Vite 代理配置。
 
 ### Q: 管理员账号无法登录？
-A: 系统启动时自动创建 `admin/admin123`。若数据库中已有 admin 用户，请先删除再重启。
+A: 检查 `security.bootstrap-admin` 是否已配置并启用。该机制不会覆盖已存在的同名用户，也不会重置密码；请通过管理端或数据库按既定运维流程修复账号。
 
 ---
 

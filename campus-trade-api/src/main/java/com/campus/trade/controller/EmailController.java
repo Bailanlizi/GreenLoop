@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -17,9 +18,9 @@ public class EmailController {
     private EmailService emailService;
 
     @PostMapping("/send-code")
-    public Result<Void> sendCode(@RequestBody Map<String, String> payload) {
+    public Result<Void> sendCode(@RequestBody Map<String, String> payload, HttpServletRequest request) {
         String email = payload.get("email");
-        emailService.sendVerificationCode(email);
+        emailService.sendVerificationCode(email, request.getRemoteAddr());
         return Result.success();
     }
 }

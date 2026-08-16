@@ -28,6 +28,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return new AuthenticatedUser(
                 user.getUsername(),
                 user.getPassword(),
+                !Integer.valueOf(0).equals(user.getStatus()),
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole())), // 传递角色权限
                 user.getId(),
                 user.getNickname(),

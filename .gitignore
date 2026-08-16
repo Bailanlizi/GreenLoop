@@ -3,4 +3,26 @@
 .workbuddy/
 
 #个人开发情况
-docs/private-docs
+docs/private-docs/
+
+# 本地环境配置（仓库仅提交 application_example.yml 模板）
+campus-trade-api/src/main/resources/application.yml
+campus-trade-api/src/main/resources/application-*.yml
+!campus-trade-api/src/main/resources/application-test.yml
+!campus-trade-api/src/main/resources/application_example.yml
+campus-trade-api/src/main/resources/application.properties
+
+# 运行时上传文件与构建产物
+campus-trade-api/uploads/
+uploads-test/
+campus-trade-api/target/
+campus-trade-web/node_modules/
+campus-trade-web/dist/
+campus-trade-admin/node_modules/
+campus-trade-admin/dist/
+
+# IDE 和操作系统生成文件
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

@@ -14,12 +14,17 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import com.campus.trade.exception.CustomException;
 
 @Service
 public class EmailServiceImpl implements EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailServiceImpl.class);
     public static final String VERIFICATION_CODE_KEY_PREFIX = "verification_code:";
+    private static final String COOLDOWN_KEY_PREFIX = "verification_cooldown:";
+    private static final String RATE_KEY_PREFIX = "verification_rate:";
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,63}$");
 
     @Autowired
     private JavaMailSender mailSender;
@@ -29,23 +34,40 @@ public class EmailServiceImpl implements EmailService {
 
     @Value("${spring.mail.username}")
     private String from;
+    @Value("${security.verification-code.send-cooldown-seconds:60}")
+    private long sendCooldownSeconds;
+    @Value("${security.verification-code.max-sends-per-hour:5}")
+    private long maxSendsPerHour;
 
     @Override
-    public void sendVerificationCode(String to) {
+    public void sendVerificationCode(String to, String clientIp) {
+        if (to == null || !EMAIL_PATTERN.matcher(to.trim()).matches()) {
+            throw new CustomException("邮箱格式不正确");
+        }
+        String email = to.trim().toLowerCase();
+        String source = (clientIp == null || clientIp.isBlank()) ? "unknown" : clientIp;
+        if (Boolean.FALSE.equals(redisTemplate.opsForValue().setIfAbsent(COOLDOWN_KEY_PREFIX + email, "1", sendCooldownSeconds, TimeUnit.SECONDS))) {
+            throw new CustomException("验证码发送过于频繁，请稍后再试");
+        }
+        Long count = redisTemplate.opsForValue().increment(RATE_KEY_PREFIX + source);
+        if (count != null && count == 1) {
+            redisTemplate.expire(RATE_KEY_PREFIX + source, 1, TimeUnit.HOURS);
+        }
+        if (count != null && count > maxSendsPerHour) {
+            throw new CustomException("当前来源发送验证码次数过多，请稍后再试");
+        }
         String code = generateVerificationCode();
-
-        // 将验证码存入 Redis，有效期5分钟
-        redisTemplate.opsForValue().set(VERIFICATION_CODE_KEY_PREFIX + to, code, 5, TimeUnit.MINUTES);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
-        message.setTo(to);
+        message.setTo(email);
         message.setSubject("GreenLoop - 您的注册验证码");
         message.setText("欢迎注册GreenLoop校园二手平台！您的验证码是：" + code + "，有效期为5分钟。");
 
         try {
             mailSender.send(message);
-            log.info("已成功向 {} 发送验证码: {}", to, code);
+            redisTemplate.opsForValue().set(VERIFICATION_CODE_KEY_PREFIX + email, code, 5, TimeUnit.MINUTES);
+            log.info("已成功向 {} 发送验证码", email);
         } catch (Exception e) {
             log.error("向 {} 发送邮件失败", to, e);
             throw new RuntimeException("邮件发送失败，请稍后重试");

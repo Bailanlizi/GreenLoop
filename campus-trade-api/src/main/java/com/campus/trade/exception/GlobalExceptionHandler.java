@@ -11,10 +11,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
+import org.springframework.security.access.AccessDeniedException;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Result<String> handleAccessDeniedException(AccessDeniedException e) {
+        return Result.error(403, "无权限访问该资源", "AUTH_FORBIDDEN");
+    }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
