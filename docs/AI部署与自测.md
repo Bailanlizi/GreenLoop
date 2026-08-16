@@ -10,7 +10,7 @@
 - 图片建议使用对象存储（非必须）
 
 ## 3. 数据库增量（已有库的情况）
-如果你的数据库已经存在，只需要补充下面两张新表即可：
+如果你的数据库已经存在，只需要补充下面两张新表即可。其中 `product_embeddings` 为语义搜索 / 推荐所必需；`product_risks` 仅用于保存 AI 风险检测结果，当前未参与交易拦截，属于实验性能力，可仅建表不依赖。
 ```sql
 CREATE TABLE IF NOT EXISTS `product_embeddings` (
   `product_id` BIGINT NOT NULL,
@@ -64,7 +64,7 @@ POST /users/authenticate
 然后测试：
 ```
 POST /ai/publish/suggest
-POST /products/risk-check
+POST /products/risk-check          # 实验性：仅记录 AI 风险检测结果，不拦截交易
 GET  /products?keyword=xxx&searchMode=semantic
 GET  /products?keyword=xxx&searchMode=hybrid
 GET  /products/{id}/recommendations

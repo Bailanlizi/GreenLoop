@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: campus-trade-api
+  datasource:
+    url: jdbc:mysql://localhost:3306/campus_trade?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: <database-username>
+    password: <database-password>
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: localhost
+    port: 6379
+    password: <redis-password-or-empty>
+    database: 0
+  mail:
+    host: <smtp-host>
+    port: 587
+    username: <mail-username>
+    password: <mail-authorization-code>
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.campus.trade.mapper: debug
+
+jwt:
+  secret: <generate-a-long-random-secret>
+  expiration: 86400000
+
+file:
+  upload-dir: uploads/
+
+ai:
+  enabled: false
+  base-url: <ai-api-base-url>
+  api-key: <ai-api-key>
+  chat-model: <chat-model>
+  embedding-model: <embedding-model>
+  timeout-ms: 30000
+  temperature: 0.7
+
+search:
+  hybrid:
+    semantic-weight: 0.6
+    lexical-weight: 0.4
+    candidate-limit: 100
+    min-semantic-score: 0.3
+
+recommend:
+  hybrid:
+    embedding-weight: 0.7
+    cf-weight: 0.3
+    candidate-limit: 100
+    result-limit: 10
