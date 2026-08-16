@@ -142,7 +142,7 @@ Copy-Item .env.example .env
 .\scripts\start-local.ps1 up
 ```
 
-脚本会启动 MySQL、Redis、后端、用户端和管理端。首次创建的 MySQL 数据卷会自动导入完整建表脚本；已有业务库不要用此方式重建，应按增量脚本升级。常用命令：`.\scripts\start-local.ps1 logs`、`.\scripts\start-local.ps1 down`、`.\scripts\start-local.ps1 build`。
+脚本会启动 MySQL、Redis、后端、用户端和管理端。首次创建的 MySQL 数据卷会以 UTF-8 自动导入完整建表脚本；已有业务库不要用此方式重建，应按增量脚本升级。常用命令：`.\scripts\start-local.ps1 logs`、`.\scripts\start-local.ps1 down`、`.\scripts\start-local.ps1 build`。
 
 ### 步骤 4：访问与初始管理员
 | 服务 | 地址 |
