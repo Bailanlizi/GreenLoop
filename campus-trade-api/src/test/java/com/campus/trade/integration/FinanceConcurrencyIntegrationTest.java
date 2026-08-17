@@ -148,6 +148,7 @@ class FinanceConcurrencyIntegrationTest {
         jdbc.update("DELETE FROM payment_order");
         jdbc.update("DELETE FROM recharge_order");
         jdbc.update("DELETE FROM account");
+        jdbc.update("DELETE FROM ratings");
         jdbc.update("DELETE FROM orders");
         jdbc.update("DELETE FROM product");
         jdbc.update("DELETE FROM user");

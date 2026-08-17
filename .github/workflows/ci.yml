@@ -35,7 +35,6 @@ jobs:
       - name: Initialize test schema
         run: |
           sed 's/USE campus_trade;/USE campus_trade_test;/' campus-trade-api/src/main/resources/campus_trade.sql | mysql -h 127.0.0.1 -uroot -proot
-          mysql -h 127.0.0.1 -uroot -proot campus_trade_test < scripts/stage2_finance_migration.sql
       - name: Run backend tests
         working-directory: campus-trade-api
         env:
