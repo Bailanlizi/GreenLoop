@@ -5,6 +5,9 @@
 #个人开发情况
 docs/private-docs/
 
+#项目衡量指标
+docs/支付接口压测报告.md
+
 # 本地环境配置（仓库仅提交 application_example.yml 模板）
 campus-trade-api/src/main/resources/application.yml
 campus-trade-api/src/main/resources/application-*.yml

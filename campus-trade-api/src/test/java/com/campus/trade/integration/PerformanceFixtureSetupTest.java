@@ -11,12 +11,15 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 
+//使用”test“配置文件
 @ActiveProfiles("test")
+//启动完整的Spring容器，真实调用Service和数据库；关闭某些功能，加速测试启动
 @SpringBootTest(properties = {"orders.payment-expiration-enabled=false", "security.bootstrap-admin.enabled=false", "ai.enabled=false", "spring.mail.host=localhost"})
 class PerformanceFixtureSetupTest {
-    @Autowired private JdbcTemplate jdbc;
+    @Autowired private JdbcTemplate jdbc;//Spring自动注入真正的组件：执行SQL语句、资金服务
     @Autowired private FinanceService financeService;
 
+    //测试前的数据准备
     @Test
     void preparesIsolatedPerformanceUsersAndBalance() {
         jdbc.update("DELETE FROM account_flow"); jdbc.update("DELETE FROM settlement_order"); jdbc.update("DELETE FROM refund_order");

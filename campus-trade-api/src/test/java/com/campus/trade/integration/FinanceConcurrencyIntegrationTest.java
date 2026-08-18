@@ -39,6 +39,7 @@ class FinanceConcurrencyIntegrationTest {
     @Autowired private FinanceService financeService;
     @Autowired private JdbcTemplate jdbc;
 
+    //每次测试前都会运行一次，清空测试数据，保证测试环境干净
     @BeforeEach
     void setUp() {
         clearTestData();
@@ -46,13 +47,14 @@ class FinanceConcurrencyIntegrationTest {
         insertUser(SELLER_ID, "finance-seller");
     }
 
+//幂等性拦截率100%（重复提交100次，仅1次扣款）
     @Test
     void concurrentSameRequestProducesOnePaymentFreezeAndFlow() throws Exception {
         createOrder("910001", "920001", new BigDecimal("60.00"));
         rechargeBuyer(new BigDecimal("100.00"), "recharge-same-request");
-
+        //50个线程并发支付同一个订单，且使用完全相同的requestid
         List<Boolean> outcomes = concurrently(50, () -> pay("920001", "same-payment-request"));
-
+        //核心断言：支付点单表里只有1条记录：幂等生效
         assertEquals(50, outcomes.size());
         assertEquals(1, count("SELECT COUNT(*) FROM payment_order"));
         assertEquals(1, count("SELECT COUNT(*) FROM account_freeze_record"));
@@ -61,19 +63,23 @@ class FinanceConcurrencyIntegrationTest {
         assertEquals(new BigDecimal("60.00"), decimal("SELECT frozen_balance FROM account WHERE user_id = " + BUYER_ID));
     }
 
+    // 并发扣款一致性测试：100元余额不能被扣超 对应指标：并发扣款一致性（100线程，仅1笔能成功，余额不为负）
     @Test
     void concurrentDifferentOrdersCannotOverdrawBuyerBalance() throws Exception {
         rechargeBuyer(new BigDecimal("100.00"), "recharge-overdraw");
         for (int i = 0; i < 10; i++) {
             createOrder(String.valueOf(910100 + i), String.valueOf(920100 + i), new BigDecimal("30.00"));
         }
+        //原子计数器；用于让每个线程拿到不同的订单号
         AtomicInteger nextOrder = new AtomicInteger(920100);
 
+        // 核心：10个线程同时支付不同的订单，抢同一个买家的100元余额
         List<Boolean> outcomes = concurrently(10, () -> {
             String orderId = String.valueOf(nextOrder.getAndIncrement());
             return pay(orderId, "different-request-" + orderId);
         });
 
+        //买家的可用余额、冻结余额都不能为负数
         BigDecimal available = decimal("SELECT available_balance FROM account WHERE user_id = " + BUYER_ID);
         BigDecimal frozen = decimal("SELECT frozen_balance FROM account WHERE user_id = " + BUYER_ID);
         BigDecimal frozenPayments = decimal("SELECT COALESCE(SUM(amount), 0) FROM payment_order WHERE status = 'FROZEN'");
@@ -86,6 +92,7 @@ class FinanceConcurrencyIntegrationTest {
                 "optimistic locking may reject a competing payment, but it must not allow more than three freezes");
     }
 
+    //辅助方法：执行支付并捕获异常（异常表示支付失败）
     private boolean pay(String orderId, String requestId) {
         try {
             PaymentRequest request = new PaymentRequest();
@@ -97,6 +104,7 @@ class FinanceConcurrencyIntegrationTest {
         }
     }
 
+    //辅助方法：买家充值
     private void rechargeBuyer(BigDecimal amount, String requestId) {
         RechargeRequest request = new RechargeRequest();
         request.setAmount(amount);
@@ -104,9 +112,10 @@ class FinanceConcurrencyIntegrationTest {
         financeService.recharge(BUYER_ID, request);
     }
 
+    //并发执行的核心工具：让多个线程在同一时刻”一起出发“，模拟真实的高并发场景
     private List<Boolean> concurrently(int workers, Callable<Boolean> task) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(workers);
-        CountDownLatch ready = new CountDownLatch(workers);
+        CountDownLatch ready = new CountDownLatch(workers); //创建固定大小的线程池
         CountDownLatch start = new CountDownLatch(1);
         try {
             List<Future<Boolean>> futures = new ArrayList<>();
@@ -117,8 +126,8 @@ class FinanceConcurrencyIntegrationTest {
                     return task.call();
                 }));
             }
-            ready.await();
-            start.countDown();
+            ready.await();//等待所有线程都准备好
+            start.countDown();//所有被阻塞的线程同时启动
             List<Boolean> outcomes = new ArrayList<>();
             for (Future<Boolean> future : futures) outcomes.add(future.get());
             return outcomes;
@@ -127,6 +136,7 @@ class FinanceConcurrencyIntegrationTest {
         }
     }
 
+    //数据库操作辅助方法
     private void createOrder(String productId, String orderId, BigDecimal amount) {
         jdbc.update("INSERT INTO product(id, seller_id, category_id, title, description, price, cover_image, status, delivery_options) VALUES (?, ?, 1, ?, 'test', ?, 'test.png', 'LOCKED', 'MEETUP')",
                 Long.valueOf(productId), Long.valueOf(SELLER_ID), "finance-product-" + productId, amount);
