@@ -1,0 +1,50 @@
+{
+  "2-支付pay" : {
+    "transaction" : "2-支付pay",
+    "sampleCount" : 1000,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 29.50199999999999,
+    "medianResTime" : 28.0,
+    "minResTime" : 15.0,
+    "maxResTime" : 74.0,
+    "pct1ResTime" : 39.0,
+    "pct2ResTime" : 43.0,
+    "pct3ResTime" : 54.0,
+    "throughput" : 46.44250417982538,
+    "receivedKBytesPerSec" : 42.39860476558146,
+    "sentKBytesPerSec" : 22.399845651240014
+  },
+  "1-登录authenticate" : {
+    "transaction" : "1-登录authenticate",
+    "sampleCount" : 1000,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 117.16700000000013,
+    "medianResTime" : 116.0,
+    "minResTime" : 73.0,
+    "maxResTime" : 208.0,
+    "pct1ResTime" : 134.0,
+    "pct2ResTime" : 141.0,
+    "pct3ResTime" : 156.99,
+    "throughput" : 46.010858562620776,
+    "receivedKBytesPerSec" : 45.45329142990245,
+    "sentKBytesPerSec" : 21.9156818665455
+  },
+  "Total" : {
+    "transaction" : "Total",
+    "sampleCount" : 2000,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 73.33450000000003,
+    "medianResTime" : 73.5,
+    "minResTime" : 15.0,
+    "maxResTime" : 208.0,
+    "pct1ResTime" : 127.0,
+    "pct2ResTime" : 134.0,
+    "pct3ResTime" : 150.0,
+    "throughput" : 91.9286633572348,
+    "receivedKBytesPerSec" : 87.36939666069131,
+    "sentKBytesPerSec" : 44.06273700358522
+  }
+}
