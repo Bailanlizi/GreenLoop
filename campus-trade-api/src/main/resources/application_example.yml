@@ -1,62 +1,31 @@
-server:
-  port: 8080
+# ============================================================
+# GreenLoop · 本地配置模板（受版本控制，供新环境参考）
+# 使用方法：复制本文件为 application.yml（该文件被 .gitignore 忽略），
+# 替换 <...> 占位符后使用。
+#
+# 注意：本模板只覆盖"本地特有/敏感"配置（数据库账号、Redis 密码、
+# 邮箱授权码、AI key、本地管理员引导等）。
+# 共享配置（server/mybatis/jwt/security/文件上传等）统一维护在
+# 受控的 application.properties 中，无需在本文件重复填写。
+# ============================================================
 
+# ---------- 本地数据库（开发库）----------
 spring:
-  application:
-    name: campus-trade-api
   datasource:
     url: jdbc:mysql://localhost:3306/campus_trade?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: <database-username>
     password: <database-password>
-    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Redis：host/port/database 默认值在 application.properties；如有密码在此填写
   redis:
-    host: localhost
-    port: 6379
     password: <redis-password-or-empty>
-    database: 0
+
+  # 发件邮箱（账号与授权码为敏感信息，仅存本文件，不入库）
   mail:
-    host: <smtp-host>
-    port: 587
     username: <mail-username>
     password: <mail-authorization-code>
-    protocol: smtp
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
 
-mybatis:
-  mapper-locations: classpath:mapper/*.xml
-  configuration:
-    map-underscore-to-camel-case: true
-
-logging:
-  level:
-    com.campus.trade.mapper: debug
-
-jwt:
-  secret: <generate-a-long-random-secret>
-  expiration: 86400000
-
-file:
-  upload-dir: uploads/
-  max-upload-size: 5MB
-
-security:
-  cors:
-    allowed-origins: http://localhost:5173,http://localhost:8000
-  bootstrap-admin:
-    enabled: false
-    username: <initial-admin-username>
-    password: <initial-admin-strong-password>
-    email: <initial-admin-email>
-  verification-code:
-    send-cooldown-seconds: 60
-    max-sends-per-hour: 5
-
+# ---------- AI 本地联调（base-url/api-key 为本地私有；关闭请将 enabled 置 false）----------
 ai:
   enabled: false
   base-url: <ai-api-base-url>
@@ -66,16 +35,10 @@ ai:
   timeout-ms: 30000
   temperature: 0.7
 
-search:
-  hybrid:
-    semantic-weight: 0.6
-    lexical-weight: 0.4
-    candidate-limit: 100
-    min-semantic-score: 0.3
-
-recommend:
-  hybrid:
-    embedding-weight: 0.7
-    cf-weight: 0.3
-    candidate-limit: 100
-    result-limit: 10
+# ---------- 本地启动时自动引导创建管理员（默认关闭，本地需要时置 true）----------
+security:
+  bootstrap-admin:
+    enabled: false
+    username: <initial-admin-username>
+    password: <initial-admin-strong-password>
+    email: <initial-admin-email>

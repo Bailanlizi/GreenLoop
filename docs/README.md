@@ -117,12 +117,12 @@ SOURCE campus-trade-api/src/main/resources/campus_trade.sql;
 > `campus_trade.sql` 是**权威建表脚本**，已包含资金账户与流水相关表。根目录 `campus_trade_test.sql` 为测试库种子脚本，金额精度与资金表尚未同步，**禁止用它重建正式库**。
 
 ### 步骤 2：配置后端
-复制示例配置并填入本地真实值（该文件已被 `.gitignore` 忽略，不进仓库）：
+共享配置（server/MyBatis/JWT/文件上传等）已内置在受控的 `application.properties`，无需手动配置。只需复制本地配置模板并填入**本机特有**的真实值（数据库账号、邮箱授权码、AI Key 等；该文件已被 `.gitignore` 忽略，不进仓库）：
 ```bash
 cp campus-trade-api/src/main/resources/application_example.yml \
    campus-trade-api/src/main/resources/application.yml
 ```
-或通过环境变量覆盖：`SPRING_DATASOURCE_PASSWORD`、`SPRING_REDIS_PASSWORD`、`SPRING_MAIL_PASSWORD`、`JWT_SECRET`、`AI_API_KEY` 等。
+或通过环境变量覆盖（优先级最高）：`SPRING_DATASOURCE_PASSWORD`、`SPRING_REDIS_PASSWORD`、`SPRING_MAIL_PASSWORD`、`JWT_SECRET`、`AI_API_KEY` 等。JWT 未配置时使用开发默认密钥，生产环境务必通过 `JWT_SECRET` 覆盖。
 
 
 
