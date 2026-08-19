@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
@@ -17,11 +18,16 @@ import java.util.Map;
 /**
  * Redis 缓存配置。
  *
- * 取代 Spring Boot 自动配置的默认 RedisCacheManager，显式控制三件事：
+ * 取代 Spring Boot 自动配置的默认 RedisCacheManager，显式控制四件事：
  * 1. 统一 key 前缀 greenloop:{cache}:{key}，避免与其它项目共用同一个 db 时冲突；
  * 2. 按 cache 名分别设置 TTL，列表类短、字典类长，杜绝"永不过期靠重启清"的旧补丁；
  * 3. value 用 GenericJackson2JsonRedisSerializer（带 @class 类型信息），
- *    可读、可跨类型反序列化，且不再依赖 JDK 序列化。
+ *    可读、可跨类型反序列化，且不再依赖 JDK 序列化；
+ * 4. 写入走 RandomJitterRedisCacheWriter：
+ *    - TTL ±20% 随机抖动，避免批量 key 同时过期引发缓存雪崩；
+ *    - 空值（RedisCache 内置 BINARY_NULL_VALUE）TTL 缩短为 1/5（下限 30s），
+ *      配合默认允许缓存 null（allowNullValues=true），实现空值防穿透的同时
+ *      避免"暂无数据"的占位挡住真实数据。
  *
  * 不再定义自定义 RedisTemplate<String,Object>：业务侧只使用 Spring Boot
  * 自动配置的 StringRedisTemplate，多余的 bean 只会带来默认类型开启的风险。
@@ -42,7 +48,8 @@ public class RedisConfig {
 
         RedisCacheConfiguration base = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(DEFAULT_TTL)
-                .disableCachingNullValues()
+                // allowNullValues 默认即 true：@Cacheable 方法返回 null 时也会写入
+                // 空值（RedisCache 内置 BINARY_NULL_VALUE），配合空值短 TTL 防穿透
                 .computePrefixWith(name -> CACHE_KEY_PREFIX + name + ":")
                 .serializeKeysWith(SerializationPair.fromSerializer(stringSerializer))
                 .serializeValuesWith(SerializationPair.fromSerializer(jsonSerializer));
@@ -59,7 +66,11 @@ public class RedisConfig {
         perCache.put("meetup_locations", base.entryTtl(Duration.ofHours(2)));
         perCache.put("categories", base.entryTtl(Duration.ofHours(2)));
 
+        RedisCacheWriter jitterWriter =
+                new RandomJitterRedisCacheWriter(RedisCacheWriter.nonLockingRedisCacheWriter(factory));
+
         return RedisCacheManager.builder(factory)
+                .cacheWriter(jitterWriter)
                 .cacheDefaults(base)
                 .withInitialCacheConfigurations(perCache)
                 .build();

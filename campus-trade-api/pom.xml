@@ -66,6 +66,14 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <!-- Redisson：分布式锁 / watchdog 自动续期（仅核心库 + 手动配置，
+             避免 redisson-spring-boot-starter 自动配置与现有 Cache/Redis 配置互相接管） -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.27.2</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
