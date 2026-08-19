@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import com.campus.trade.exception.CustomException;
@@ -24,7 +27,20 @@ public class EmailServiceImpl implements EmailService {
     public static final String VERIFICATION_CODE_KEY_PREFIX = "verification_code:";
     private static final String COOLDOWN_KEY_PREFIX = "verification_cooldown:";
     private static final String RATE_KEY_PREFIX = "verification_rate:";
+    /** 限流计数窗口（1 小时），与 EXPIRE 保持一致。 */
+    private static final long RATE_LIMIT_WINDOW_SECONDS = 3600L;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,63}$");
+
+    /**
+     * 原子限流脚本：INCR 计数，仅当计数为 1（首次）时设置过期，返回当前计数。
+     * 把 INCR 与 EXPIRE 放进同一个 Lua 调用，避免"INCR 成功但 EXPIRE 前进程崩溃"
+     * 导致计数 key 永不过期、来源被永久限流。
+     */
+    private static final RedisScript<Long> RATE_LIMIT_SCRIPT = new DefaultRedisScript<>(
+            "local c = redis.call('INCR', KEYS[1]) "
+                    + "if c == 1 then redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1])) end "
+                    + "return c",
+            Long.class);
 
     @Autowired
     private JavaMailSender mailSender;
@@ -49,10 +65,10 @@ public class EmailServiceImpl implements EmailService {
         if (Boolean.FALSE.equals(redisTemplate.opsForValue().setIfAbsent(COOLDOWN_KEY_PREFIX + email, "1", sendCooldownSeconds, TimeUnit.SECONDS))) {
             throw new CustomException("验证码发送过于频繁，请稍后再试");
         }
-        Long count = redisTemplate.opsForValue().increment(RATE_KEY_PREFIX + source);
-        if (count != null && count == 1) {
-            redisTemplate.expire(RATE_KEY_PREFIX + source, 1, TimeUnit.HOURS);
-        }
+        Long count = redisTemplate.execute(
+                RATE_LIMIT_SCRIPT,
+                Collections.singletonList(RATE_KEY_PREFIX + source),
+                String.valueOf(RATE_LIMIT_WINDOW_SECONDS));
         if (count != null && count > maxSendsPerHour) {
             throw new CustomException("当前来源发送验证码次数过多，请稍后再试");
         }

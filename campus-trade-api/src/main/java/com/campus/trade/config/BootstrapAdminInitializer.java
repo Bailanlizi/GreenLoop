@@ -4,18 +4,24 @@ import com.campus.trade.entity.User;
 import com.campus.trade.mapper.UserMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * 应用启动后按配置引导创建初始管理员账号。
+ *
+ * 历史版本曾在此处清空全部 Redis 缓存（CacheManager.clear），
+ * 作为"缓存无 TTL、靠重启保证一致性"的补救。引入 per-cache TTL 的
+ * 自定义 CacheManager 后该补丁已无必要，故移除，本类只保留管理员引导。
+ */
 @Component
-public class CacheInitializer {
+public class BootstrapAdminInitializer {
 
-    private static final Logger log = LoggerFactory.getLogger(CacheInitializer.class);
+    private static final Logger log = LoggerFactory.getLogger(BootstrapAdminInitializer.class);
 
-    private final CacheManager cacheManager;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final boolean bootstrapAdminEnabled;
@@ -23,12 +29,11 @@ public class CacheInitializer {
     private final String bootstrapAdminPassword;
     private final String bootstrapAdminEmail;
 
-    public CacheInitializer(CacheManager cacheManager, UserMapper userMapper, PasswordEncoder passwordEncoder,
-                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.enabled:false}") boolean bootstrapAdminEnabled,
-                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.username:}") String bootstrapAdminUsername,
-                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.password:}") String bootstrapAdminPassword,
-                            @org.springframework.beans.factory.annotation.Value("${security.bootstrap-admin.email:}") String bootstrapAdminEmail) {
-        this.cacheManager = cacheManager;
+    public BootstrapAdminInitializer(UserMapper userMapper, PasswordEncoder passwordEncoder,
+                                     @Value("${security.bootstrap-admin.enabled:false}") boolean bootstrapAdminEnabled,
+                                     @Value("${security.bootstrap-admin.username:}") String bootstrapAdminUsername,
+                                     @Value("${security.bootstrap-admin.password:}") String bootstrapAdminPassword,
+                                     @Value("${security.bootstrap-admin.email:}") String bootstrapAdminEmail) {
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.bootstrapAdminEnabled = bootstrapAdminEnabled;
@@ -39,15 +44,6 @@ public class CacheInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        log.info(">>> [缓存初始化] 应用已启动，开始清空所有已知缓存...");
-
-        cacheManager.getCacheNames().forEach(cacheName -> {
-            log.info("--- 正在清空缓存: {}", cacheName);
-            cacheManager.getCache(cacheName).clear();
-        });
-
-        log.info("<<< [缓存初始化] 所有缓存已成功清空。");
-
         createBootstrapAdminIfEnabled();
     }
 

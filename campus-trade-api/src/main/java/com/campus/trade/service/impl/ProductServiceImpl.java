@@ -104,20 +104,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * 【最终诊断修正】
-     * 我已将 @Cacheable 注解暂时注释掉。
-     * 这会强制此方法在每一次被调用时，都必须去数据库执行一次全新的查询，
-     * 从而彻底绕过任何可能存在的、被污染的旧缓存。
+     * 商品详情走缓存。历史版本曾因 @CacheEvict 的 value 写成
+     * "product::#productId"（字面 cache 名，SpEL 不会被解析）导致详情缓存
+     * 从不被失效，被迫注释掉 @Cacheable 绕过"脏缓存"。现已修正所有 evict
+     * 为 cacheNames = {"product","products"}，恢复缓存并依赖 per-cache TTL 兜底。
      */
     @Override
-    // @Cacheable(value = "product", key = "#productId")
+    @Cacheable(value = "product", key = "#productId")
     public Product getProductById(String productId) {
-        log.info(">>> [缓存已禁用] 正在为商品ID {} 从数据库强制查询详情...", productId);
         Product product = productMapper.findProductById(productId);
         if (product == null) {
             throw new CustomException("商品不存在或已下架");
         }
-        log.info("<<< 数据库查询成功，商品附图数量为: {}", (product.getImageUrls() != null ? product.getImageUrls().size() : 0));
         return product;
     }
 
@@ -160,7 +158,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"product::#productId", "products"}, allEntries = true)
+    @CacheEvict(cacheNames = {"product", "products"}, allEntries = true)
     public Product updateProduct(String productId, ProductDTO productDTO, String currentUserId) {
         Product existingProduct = productMapper.findProductById(productId);
         if (existingProduct == null) {
@@ -197,7 +195,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @CacheEvict(value = {"product::#productId", "products"}, allEntries = true)
+    @CacheEvict(cacheNames = {"product", "products"}, allEntries = true)
     public void updateProductStatus(String productId, String status, AuthenticatedUser user) {
         Product existingProduct = productMapper.findProductById(productId);
         if (existingProduct == null) {
@@ -346,7 +344,7 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     @Transactional
-    @CacheEvict(value = {"product::#productId", "products"}, allEntries = true)
+    @CacheEvict(cacheNames = {"product", "products"}, allEntries = true)
     public Product updateProductByAdmin(String productId, ProductDTO productDTO) {
         Product existingProduct = productMapper.findProductById(productId);
         if (existingProduct == null) {
@@ -395,7 +393,7 @@ public class ProductServiceImpl implements ProductService {
      * 注意：这将永久删除商品及其所有关联数据（如收藏、订单等，取决于数据库的外键级联设置）。
      */
     @Override
-    @CacheEvict(value = {"product::#productId", "products"}, allEntries = true)
+    @CacheEvict(cacheNames = {"product", "products"}, allEntries = true)
     public void deleteProduct(String productId) {
         Product product = productMapper.findProductById(productId);
         if (product == null) {

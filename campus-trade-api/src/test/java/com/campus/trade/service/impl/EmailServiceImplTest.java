@@ -5,14 +5,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class EmailServiceImplTest {
@@ -40,7 +39,7 @@ class EmailServiceImplTest {
     @Test
     void doesNotPersistUsableCodeWhenMailDeliveryFails() {
         when(values.setIfAbsent(startsWith("verification_cooldown:"), any(), anyLong(), any())).thenReturn(true);
-        when(values.increment(startsWith("verification_rate:"))).thenReturn(1L);
+        when(redisTemplate.execute(any(RedisScript.class), anyList(), any())).thenReturn(1L);
         doThrow(new RuntimeException("smtp unavailable")).when(mailSender).send(any(SimpleMailMessage.class));
 
         assertThrows(RuntimeException.class, () -> service.sendVerificationCode("user@example.test", "127.0.0.1"));

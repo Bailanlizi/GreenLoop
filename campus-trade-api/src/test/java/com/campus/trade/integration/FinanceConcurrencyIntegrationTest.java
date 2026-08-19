@@ -54,11 +54,11 @@ class FinanceConcurrencyIntegrationTest {
         rechargeBuyer(new BigDecimal("100.00"), "recharge-same-request");
         //50个线程并发支付同一个订单，且使用完全相同的requestid
         List<Boolean> outcomes = concurrently(50, () -> pay("920001", "same-payment-request"));
-        //核心断言：支付点单表里只有1条记录：幂等生效
+        //核心断言：支付单表里（本测试买家名下）只有1条记录：幂等生效
         assertEquals(50, outcomes.size());
-        assertEquals(1, count("SELECT COUNT(*) FROM payment_order"));
-        assertEquals(1, count("SELECT COUNT(*) FROM account_freeze_record"));
-        assertEquals(1, count("SELECT COUNT(*) FROM account_flow WHERE business_type = 'PAYMENT_FREEZE'"));
+        assertEquals(1, count("SELECT COUNT(*) FROM payment_order WHERE buyer_id = " + BUYER_ID));
+        assertEquals(1, count("SELECT COUNT(*) FROM account_freeze_record WHERE user_id = " + BUYER_ID));
+        assertEquals(1, count("SELECT COUNT(*) FROM account_flow WHERE business_type = 'PAYMENT_FREEZE' AND user_id = " + BUYER_ID));
         assertEquals(new BigDecimal("40.00"), decimal("SELECT available_balance FROM account WHERE user_id = " + BUYER_ID));
         assertEquals(new BigDecimal("60.00"), decimal("SELECT frozen_balance FROM account WHERE user_id = " + BUYER_ID));
     }
@@ -82,7 +82,7 @@ class FinanceConcurrencyIntegrationTest {
         //买家的可用余额、冻结余额都不能为负数
         BigDecimal available = decimal("SELECT available_balance FROM account WHERE user_id = " + BUYER_ID);
         BigDecimal frozen = decimal("SELECT frozen_balance FROM account WHERE user_id = " + BUYER_ID);
-        BigDecimal frozenPayments = decimal("SELECT COALESCE(SUM(amount), 0) FROM payment_order WHERE status = 'FROZEN'");
+        BigDecimal frozenPayments = decimal("SELECT COALESCE(SUM(amount), 0) FROM payment_order WHERE status = 'FROZEN' AND buyer_id = " + BUYER_ID);
         assertTrue(available.signum() >= 0, "available balance must not be negative");
         assertTrue(frozen.signum() >= 0, "frozen balance must not be negative");
         assertTrue(frozenPayments.compareTo(new BigDecimal("100.00")) <= 0, "successful freezes must not exceed initial balance");
@@ -150,18 +150,19 @@ class FinanceConcurrencyIntegrationTest {
                 Long.valueOf(id), username, username);
     }
 
+    //只清理本测试自有数据（买家900001/卖家900002），不触碰库内其他数据（如 JMeter 压测数据、k6 夹具）
     private void clearTestData() {
-        jdbc.update("DELETE FROM account_flow");
-        jdbc.update("DELETE FROM settlement_order");
-        jdbc.update("DELETE FROM refund_order");
-        jdbc.update("DELETE FROM account_freeze_record");
-        jdbc.update("DELETE FROM payment_order");
-        jdbc.update("DELETE FROM recharge_order");
-        jdbc.update("DELETE FROM account");
-        jdbc.update("DELETE FROM ratings");
-        jdbc.update("DELETE FROM orders");
-        jdbc.update("DELETE FROM product");
-        jdbc.update("DELETE FROM user");
+        jdbc.update("DELETE FROM account_flow WHERE user_id IN (?, ?)", BUYER_ID, SELLER_ID);
+        jdbc.update("DELETE FROM settlement_order WHERE buyer_id = ? OR seller_id = ?", BUYER_ID, SELLER_ID);
+        jdbc.update("DELETE FROM refund_order WHERE buyer_id = ?", BUYER_ID);
+        jdbc.update("DELETE FROM account_freeze_record WHERE user_id = ?", BUYER_ID);
+        jdbc.update("DELETE FROM payment_order WHERE buyer_id = ?", BUYER_ID);
+        jdbc.update("DELETE FROM recharge_order WHERE user_id = ?", BUYER_ID);
+        jdbc.update("DELETE FROM account WHERE user_id IN (?, ?)", BUYER_ID, SELLER_ID);
+        jdbc.update("DELETE FROM ratings WHERE order_id IN (SELECT id FROM orders WHERE buyer_id = ? OR seller_id = ?)", BUYER_ID, SELLER_ID);
+        jdbc.update("DELETE FROM orders WHERE buyer_id = ? OR seller_id = ?", BUYER_ID, SELLER_ID);
+        jdbc.update("DELETE FROM product WHERE seller_id = ?", SELLER_ID);
+        jdbc.update("DELETE FROM user WHERE id IN (?, ?)", BUYER_ID, SELLER_ID);
     }
 
     private int count(String sql) { return jdbc.queryForObject(sql, Integer.class); }
