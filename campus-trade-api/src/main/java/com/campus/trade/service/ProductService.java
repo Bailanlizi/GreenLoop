@@ -9,10 +9,11 @@ import java.util.List;
 
 public interface ProductService {
 
-    List<Product> getProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice, String orderBy);
+    PageResult<Product> getProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice,
+                                    String orderBy, Integer page, Integer size);
 
-    List<Product> searchProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice,
-                                 String orderBy, String searchMode);
+    PageResult<Product> searchProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice,
+                                       String orderBy, String searchMode, Integer page, Integer size);
 
     Product getProductById(String productId);
 

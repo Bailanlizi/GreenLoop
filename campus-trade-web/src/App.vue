@@ -16,7 +16,7 @@
           <el-dropdown>
             <div class="avatar-badge">
               <el-avatar :icon="UserFilled" :src="authStore.user?.avatar || ''" />
-              <span v-if="messageUnreadCount > 0" class="unread-dot"></span>
+              <span v-if="messageUnreadCount > 0 || notificationUnreadCount > 0" class="unread-dot"></span>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
@@ -28,6 +28,9 @@
                     我的消息
                     <span v-if="messageUnreadCount > 0" class="menu-unread-dot"></span>
                   </span>
+                </el-dropdown-item>
+                <el-dropdown-item @click="$router.push('/dashboard/notifications')">
+                  <span class="dropdown-message-item">通知中心 <span v-if="notificationUnreadCount > 0" class="menu-unread-dot"></span></span>
                 </el-dropdown-item>
                 <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
@@ -59,12 +62,14 @@ import { ElMessage } from 'element-plus';
 import { UserFilled, SwitchFilled, Moon, Sunny } from '@element-plus/icons-vue';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { getMessageUnreadCount } from './api/message';
+import { getUnreadCount as getNotificationUnreadCount } from './api/notification';
 
 const authStore = useAuthStore();
 const router = useRouter();
 
 const theme = ref('light');
 const messageUnreadCount = ref(0);
+const notificationUnreadCount = ref(0);
 let unreadPollingTimer = null;
 
 const setTheme = (val) => {
@@ -89,11 +94,17 @@ const fetchMessageUnreadCount = async () => {
     console.error('加载未读消息数失败:', error);
   }
 };
+const fetchNotificationUnreadCount = async () => {
+  if (!authStore.isAuthenticated) { notificationUnreadCount.value = 0; return; }
+  try { const response = await getNotificationUnreadCount(); notificationUnreadCount.value = response.data.data?.count || 0; }
+  catch (error) { console.error('加载未读通知数失败:', error); }
+};
 
 const startUnreadPolling = () => {
   if (unreadPollingTimer) clearInterval(unreadPollingTimer);
   fetchMessageUnreadCount();
-  unreadPollingTimer = setInterval(fetchMessageUnreadCount, 5000);
+  fetchNotificationUnreadCount();
+  unreadPollingTimer = setInterval(() => { fetchMessageUnreadCount(); fetchNotificationUnreadCount(); }, 5000);
 };
 
 const stopUnreadPolling = () => {
@@ -102,6 +113,7 @@ const stopUnreadPolling = () => {
     unreadPollingTimer = null;
   }
   messageUnreadCount.value = 0;
+  notificationUnreadCount.value = 0;
 };
 
 onMounted(() => {
@@ -113,11 +125,13 @@ onMounted(() => {
   setTheme(saved === 'dark' ? 'dark' : 'light');
   document.documentElement.setAttribute('data-theme', theme.value);
   window.addEventListener('message-read-state-changed', fetchMessageUnreadCount);
+  window.addEventListener('notification-read-state-changed', fetchNotificationUnreadCount);
 });
 
 onUnmounted(() => {
   stopUnreadPolling();
   window.removeEventListener('message-read-state-changed', fetchMessageUnreadCount);
+  window.removeEventListener('notification-read-state-changed', fetchNotificationUnreadCount);
 });
 
 watch(() => authStore.isAuthenticated, (isAuthenticated) => {

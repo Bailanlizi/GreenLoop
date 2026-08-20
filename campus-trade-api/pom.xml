@@ -18,6 +18,7 @@
 
     <properties>
         <java.version>17</java.version>
+        <flyway.version>10.22.0</flyway.version>
     </properties>
 
     <dependencies>
@@ -66,6 +67,11 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- Redisson：分布式锁 / watchdog 自动续期（仅核心库 + 手动配置，
              避免 redisson-spring-boot-starter 自动配置与现有 Cache/Redis 配置互相接管） -->
         <dependency>
@@ -105,6 +111,18 @@
             <groupId>com.github.pagehelper</groupId>
             <artifactId>pagehelper-spring-boot-starter</artifactId>
             <version>1.4.6</version>
+        </dependency>
+
+        <!-- 数据库 schema 版本管理；现有库以 baseline 方式接入。 -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>${flyway.version}</version>
         </dependency>
 
         <!-- 【新增】Spring Boot Mail Starter，用于发送邮件 -->

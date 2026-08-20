@@ -73,34 +73,55 @@ public class ProductServiceImpl implements ProductService {
     @Override
 //    @Caching
     @Cacheable("products")
-    public List<Product> getProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice, String orderBy) {
+    public PageResult<Product> getProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice,
+                                           String orderBy, Integer page, Integer size) {
         String normalizedKeyword = keyword == null ? null : keyword.trim();
         if (normalizedKeyword != null && normalizedKeyword.isEmpty()) {
             normalizedKeyword = null;
         }
-        return productMapper.findProducts(normalizedKeyword, categoryId, minPrice, maxPrice, orderBy);
+        PageHelper.startPage(normalizePage(page), normalizeSize(size));
+        return new PageResult<>(productMapper.findProducts(normalizedKeyword, categoryId, minPrice, maxPrice, orderBy));
     }
 
     @Override
-    public List<Product> searchProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice,
-                                        String orderBy, String searchMode) {
+    public PageResult<Product> searchProducts(String keyword, Integer categoryId, Double minPrice, Double maxPrice,
+                                              String orderBy, String searchMode, Integer page, Integer size) {
         String mode = searchMode == null ? "standard" : searchMode.trim();
         String normalizedKeyword = keyword == null ? null : keyword.trim();
         if (normalizedKeyword != null && normalizedKeyword.isEmpty()) {
             normalizedKeyword = null;
         }
         if (!"semantic".equalsIgnoreCase(mode) && !"hybrid".equalsIgnoreCase(mode) || normalizedKeyword == null) {
-            return getProducts(keyword, categoryId, minPrice, maxPrice, orderBy);
+            return getProducts(keyword, categoryId, minPrice, maxPrice, orderBy, page, size);
         }
         int candidateLimit = hybridSearchProperties.getCandidateLimit();
         if (candidateLimit <= 0) {
             candidateLimit = 200;
         }
         List<Product> candidates = productMapper.findProductsWithLimit(normalizedKeyword, categoryId, minPrice, maxPrice, orderBy, candidateLimit);
-        if ("hybrid".equalsIgnoreCase(mode)) {
-            return productSemanticSearchService.rankHybrid(normalizedKeyword, candidates);
-        }
-        return productSemanticSearchService.rank(normalizedKeyword, candidates);
+        List<Product> ranked = "hybrid".equalsIgnoreCase(mode)
+                ? productSemanticSearchService.rankHybrid(normalizedKeyword, candidates)
+                : productSemanticSearchService.rank(normalizedKeyword, candidates);
+        return pageResult(ranked, page, size);
+    }
+
+    private int normalizePage(Integer page) {
+        return page == null || page < 1 ? 1 : page;
+    }
+
+    private int normalizeSize(Integer size) {
+        return size == null ? 20 : Math.max(1, Math.min(size, 100));
+    }
+
+    private PageResult<Product> pageResult(List<Product> products, Integer page, Integer size) {
+        int normalizedPage = normalizePage(page);
+        int normalizedSize = normalizeSize(size);
+        int total = products == null ? 0 : products.size();
+        int from = Math.min((normalizedPage - 1) * normalizedSize, total);
+        int to = Math.min(from + normalizedSize, total);
+        PageResult<Product> result = new PageResult<>(products == null ? List.of() : products.subList(from, to));
+        result.setTotal(total);
+        return result;
     }
 
     /**

@@ -4,7 +4,7 @@ import com.campus.trade.dto.ProductDemandRequest;
 import com.campus.trade.entity.Product;
 import com.campus.trade.entity.ProductDemand;
 import com.campus.trade.mapper.ProductDemandMapper;
-import com.campus.trade.service.NotificationService;
+import com.campus.trade.service.NotificationEventService;
 import com.campus.trade.service.ProductDemandService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +16,11 @@ import java.util.Optional;
 public class ProductDemandServiceImpl implements ProductDemandService {
 
     private final ProductDemandMapper demandMapper;
-    private final NotificationService notificationService;
+    private final NotificationEventService notificationEvents;
 
-    public ProductDemandServiceImpl(ProductDemandMapper demandMapper, NotificationService notificationService) {
+    public ProductDemandServiceImpl(ProductDemandMapper demandMapper, NotificationEventService notificationEvents) {
         this.demandMapper = demandMapper;
-        this.notificationService = notificationService;
+        this.notificationEvents = notificationEvents;
     }
 
     @Override
@@ -72,7 +72,7 @@ public class ProductDemandServiceImpl implements ProductDemandService {
         }
         for (ProductDemand demand : matches) {
             String content = "您关注的需求已匹配到新商品：" + product.getTitle();
-            notificationService.createNotification(demand.getUserId(), "DEMAND_MATCH", content, product.getId());
+            notificationEvents.product(demand.getUserId(), "DEMAND_MATCH", content, product.getId());
         }
     }
 

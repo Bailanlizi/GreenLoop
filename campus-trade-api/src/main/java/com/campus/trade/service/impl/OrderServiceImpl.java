@@ -13,7 +13,7 @@ import com.campus.trade.entity.PaymentOrder;
 import com.campus.trade.exception.CustomException;
 import com.campus.trade.mapper.OrderMapper;
 import com.campus.trade.mapper.ProductMapper;
-import com.campus.trade.service.NotificationService;
+import com.campus.trade.service.NotificationEventService;
 import com.campus.trade.service.FinanceService;
 import com.campus.trade.service.OrderService;
 import com.github.pagehelper.PageHelper;
@@ -33,14 +33,14 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderMapper orderMapper;
     private final ProductMapper productMapper;
-    private final NotificationService notificationService;
+    private final NotificationEventService notificationEvents;
     private final FinanceService financeService;
 
-    public OrderServiceImpl(OrderMapper orderMapper, ProductMapper productMapper, NotificationService notificationService,
+    public OrderServiceImpl(OrderMapper orderMapper, ProductMapper productMapper, NotificationEventService notificationEvents,
                             FinanceService financeService) {
         this.orderMapper = orderMapper;
         this.productMapper = productMapper;
-        this.notificationService = notificationService;
+        this.notificationEvents = notificationEvents;
         this.financeService = financeService;
     }
 
@@ -85,6 +85,7 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentDeadline(new Date(System.currentTimeMillis() + 30L * 60L * 1000L));
 
         orderMapper.insertOrder(order);
+        notificationEvents.order(order.getSellerId(), "ORDER_CREATED", "有买家下单，等待买家付款。", order.getId());
         return orderMapper.findOrderById(order.getId());
     }
 
@@ -143,7 +144,7 @@ public class OrderServiceImpl implements OrderService {
         if (productMapper.updateProductStatusIfCurrent(order.getProductId(), ProductStatus.LOCKED.name(), ProductStatus.SOLD.name()) != 1) {
             throw new CustomException("商品状态异常，无法完成订单");
         }
-        notificationService.createNotification(order.getSellerId(), "ORDER_COMPLETED", "买家已确认订单完成。", orderId);
+        notificationEvents.order(order.getSellerId(), "ORDER_SETTLED", "买家已确认收货，款项已结算至您的账户。", orderId);
         return orderMapper.findOrderById(orderId);
     }
 
@@ -161,7 +162,7 @@ public class OrderServiceImpl implements OrderService {
         if (orderMapper.markOrderShipped(orderId, shipmentDTO.getShippingProvider().trim(), shipmentDTO.getTrackingNumber().trim()) != 1) {
             throw new CustomException("当前订单状态不允许发货");
         }
-        notificationService.createNotification(order.getBuyerId(), "ORDER_SHIPPED", "您的订单已发货。", orderId);
+        notificationEvents.order(order.getBuyerId(), "ORDER_SHIPPED", "您的订单已发货。", orderId);
         return orderMapper.findOrderById(orderId);
     }
 
@@ -175,8 +176,7 @@ public class OrderServiceImpl implements OrderService {
             throw new CustomException("仅未履约订单可强制取消");
         }
         cancelAndRelease(order, currentStatus);
-        notificationService.createNotification(order.getBuyerId(), "ORDER_CANCELLED", "订单已被平台强制取消。", orderId);
-        notificationService.createNotification(order.getSellerId(), "ORDER_CANCELLED", "订单已被平台强制取消，商品已恢复可售。", orderId);
+        notificationEvents.order(order.getBuyerId(), "ORDER_CANCELLED", "订单已被平台强制取消。", orderId);
         return orderMapper.findOrderById(orderId);
     }
 
@@ -216,11 +216,13 @@ public class OrderServiceImpl implements OrderService {
     private void cancelAndRelease(Order order, OrderStatus currentStatus) {
         if (currentStatus == OrderStatus.AWAITING_MEETUP || currentStatus == OrderStatus.AWAITING_SHIPMENT) {
             financeService.refundPaidOrder(order);
+            notificationEvents.order(order.getBuyerId(), "ORDER_REFUNDED", "订单已取消，冻结资金已退回账户。", order.getId());
         }
         updateOrderOrThrow(order, currentStatus, OrderStatus.CANCELLED);
         if (productMapper.updateProductStatusIfCurrent(order.getProductId(), ProductStatus.LOCKED.name(), ProductStatus.AVAILABLE.name()) != 1) {
             throw new CustomException("商品状态异常，无法释放商品");
         }
+        notificationEvents.order(order.getSellerId(), "ORDER_CANCELLED", "订单已取消，商品已恢复可售。", order.getId());
     }
 
     private void updateOrderOrThrow(Order order, OrderStatus currentStatus, OrderStatus targetStatus) {

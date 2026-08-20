@@ -3,6 +3,7 @@ package com.campus.trade.service;
 import com.campus.trade.entity.Order;
 import com.campus.trade.mapper.OrderMapper;
 import com.campus.trade.mapper.ProductMapper;
+import com.campus.trade.service.NotificationEventService;
 import org.junit.jupiter.api.Test;
 
 import java.util.Date;
@@ -14,7 +15,7 @@ import static org.mockito.Mockito.*;
 class OrderExpirationServiceTest {
     private final OrderMapper orderMapper = mock(OrderMapper.class);
     private final ProductMapper productMapper = mock(ProductMapper.class);
-    private final OrderExpirationService service = new OrderExpirationService(orderMapper, productMapper);
+    private final OrderExpirationService service = new OrderExpirationService(orderMapper, productMapper, mock(NotificationEventService.class));
 
     @Test
     void expiredPendingOrderIsCancelledAndProductReleased() {

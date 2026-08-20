@@ -3,10 +3,12 @@ package com.campus.trade.integration;
 import com.campus.trade.dto.PaymentRequest;
 import com.campus.trade.dto.RechargeRequest;
 import com.campus.trade.service.FinanceService;
+import com.campus.trade.service.NotificationEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -38,6 +40,7 @@ class FinanceConcurrencyIntegrationTest {
 
     @Autowired private FinanceService financeService;
     @Autowired private JdbcTemplate jdbc;
+    @MockBean private NotificationEventService notificationEvents;
 
     //每次测试前都会运行一次，清空测试数据，保证测试环境干净
     @BeforeEach
@@ -152,6 +155,7 @@ class FinanceConcurrencyIntegrationTest {
 
     //只清理本测试自有数据（买家900001/卖家900002），不触碰库内其他数据（如 JMeter 压测数据、k6 夹具）
     private void clearTestData() {
+        jdbc.update("DELETE FROM notifications WHERE user_id IN (?, ?)", BUYER_ID, SELLER_ID);
         jdbc.update("DELETE FROM account_flow WHERE user_id IN (?, ?)", BUYER_ID, SELLER_ID);
         jdbc.update("DELETE FROM settlement_order WHERE buyer_id = ? OR seller_id = ?", BUYER_ID, SELLER_ID);
         jdbc.update("DELETE FROM refund_order WHERE buyer_id = ?", BUYER_ID);

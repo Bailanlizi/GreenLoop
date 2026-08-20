@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/messages")
+@RequestMapping("/messages")
 @PreAuthorize("isAuthenticated()") // 整个Controller都需要登录后才能访问
 public class MessageController {
 

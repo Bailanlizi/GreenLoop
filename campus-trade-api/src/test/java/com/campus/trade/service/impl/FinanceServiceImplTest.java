@@ -9,7 +9,7 @@ import com.campus.trade.entity.RechargeOrder;
 import com.campus.trade.exception.CustomException;
 import com.campus.trade.mapper.FinanceMapper;
 import com.campus.trade.mapper.OrderMapper;
-import com.campus.trade.service.NotificationService;
+import com.campus.trade.service.NotificationEventService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,7 +33,7 @@ class FinanceServiceImplTest {
     void setUp() {
         financeMapper = mock(FinanceMapper.class);
         orderMapper = mock(OrderMapper.class);
-        financeService = new FinanceServiceImpl(financeMapper, orderMapper, mock(NotificationService.class));
+        financeService = new FinanceServiceImpl(financeMapper, orderMapper, mock(NotificationEventService.class));
     }
 
     @Test

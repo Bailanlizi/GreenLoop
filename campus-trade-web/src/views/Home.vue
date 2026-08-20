@@ -76,7 +76,7 @@
         </el-row>
       </el-card>
 
-      <el-row :gutter="20" v-loading="loading" style="margin-top: 20px;">
+      <el-row ref="productGrid" :gutter="20" v-loading="loading" style="margin-top: 20px;">
         <el-col
           :xs="24"
           :sm="12"
@@ -88,7 +88,7 @@
         >
           <el-card shadow="hover" class="product-card home-product-card" @click="goToDetail(product.id)">
             <div class="product-image-area">
-              <img :src="product.coverImage" class="product-image" alt="商品图片" @error="onImageError" />
+              <img :src="product.coverImage" class="product-image" alt="商品图片" loading="lazy" decoding="async" @error="onImageError" />
               <div v-if="product.imageUrls && product.imageUrls.length > 0" class="image-count-overlay">
                 <el-icon><CameraFilled /></el-icon>
                 <span>1 / {{ 1 + product.imageUrls.length }}</span>
@@ -117,6 +117,16 @@
         </el-col>
       </el-row>
 
+      <el-pagination
+        v-if="total > 0"
+        class="product-pagination"
+        layout="total, prev, pager, next"
+        :current-page="page"
+        :page-size="pageSize"
+        :total="total"
+        @current-change="handlePageChange"
+      />
+
       <el-empty v-if="!loading && products.length === 0" description="暂无符合条件的商品">
         <template #image>
           <el-icon style="font-size:48px;color:var(--color-primary)"><Goods /></el-icon>
@@ -127,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted, reactive, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search, CameraFilled, Goods, UserFilled } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
@@ -139,6 +149,10 @@ const router = useRouter();
 const products = ref([]);
 const categories = ref([]);
 const loading = ref(false);
+const page = ref(1);
+const total = ref(0);
+const pageSize = 20;
+const productGrid = ref(null);
 
 const filters = reactive({
   keyword: '',
@@ -167,18 +181,19 @@ const fetchProducts = async () => {
         params[key] = filters[key];
       }
     }
-    const response = await getProducts(params);
+    const response = await getProducts({ ...params, page: page.value, size: pageSize });
     if (!response || !response.data || !response.data.data) {
       products.value = [];
       return;
     }
     const data = response.data.data;
-    if (!Array.isArray(data)) {
+    if (!data || !Array.isArray(data.list)) {
       products.value = [];
+      total.value = 0;
       return;
     }
     const productMap = new Map();
-    data.forEach((item) => {
+    data.list.forEach((item) => {
       if (!productMap.has(item.id)) {
         productMap.set(item.id, { ...item, imageUrls: [] });
       }
@@ -190,6 +205,7 @@ const fetchProducts = async () => {
       }
     });
     products.value = Array.from(productMap.values());
+    total.value = Number(data.total) || 0;
   } catch (error) {
     console.error('获取商品列表失败:', error);
     ElMessage.error('搜索失败，请稍后重试');
@@ -235,12 +251,19 @@ const formatDate = (value) => {
 };
 
 const handleFilterChange = debounce(() => {
+  page.value = 1;
   fetchProducts();
 }, 500);
 
+const handlePageChange = async (nextPage) => {
+  page.value = nextPage;
+  await fetchProducts();
+  await nextTick();
+  productGrid.value?.$el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 onMounted(() => {
-  fetchProducts();
-  fetchCategories();
+  Promise.all([fetchProducts(), fetchCategories()]);
 });
 </script>
 
@@ -388,6 +411,10 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.product-pagination {
+  justify-content: center;
+  margin-top: 8px;
 }
 @media (max-width: 600px) {
   .filter-card .el-row {

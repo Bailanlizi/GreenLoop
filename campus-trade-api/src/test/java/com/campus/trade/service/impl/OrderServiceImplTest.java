@@ -7,7 +7,7 @@ import com.campus.trade.entity.Product;
 import com.campus.trade.exception.CustomException;
 import com.campus.trade.mapper.OrderMapper;
 import com.campus.trade.mapper.ProductMapper;
-import com.campus.trade.service.NotificationService;
+import com.campus.trade.service.NotificationEventService;
 import com.campus.trade.service.FinanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ class OrderServiceImplTest {
         orderMapper = mock(OrderMapper.class);
         productMapper = mock(ProductMapper.class);
         financeService = mock(FinanceService.class);
-        orderService = new OrderServiceImpl(orderMapper, productMapper, mock(NotificationService.class), financeService);
+        orderService = new OrderServiceImpl(orderMapper, productMapper, mock(NotificationEventService.class), financeService);
     }
 
     @Test

@@ -64,6 +64,9 @@ CREATE TABLE `product` (
                            `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
                            `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                            PRIMARY KEY (`id`),
+                           KEY `idx_product_status_create_time` (`status`, `create_time`),
+                           KEY `idx_product_status_category_create_time` (`status`, `category_id`, `create_time`),
+                           KEY `idx_product_status_price_create_time` (`status`, `price`, `create_time`),
                            FOREIGN KEY (`seller_id`) REFERENCES `user`(`id`),
                            FOREIGN KEY (`category_id`) REFERENCES `category`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品表';
@@ -134,11 +137,34 @@ CREATE TABLE `notifications` (
                                  `type` VARCHAR(50) NOT NULL COMMENT '通知类型 (e.g., NEW_ORDER, NEW_MESSAGE)',
                                  `content` VARCHAR(255) NOT NULL COMMENT '通知的简要内容',
                                  `related_id` BIGINT COMMENT '关联的对象ID (如订单ID, 商品ID)',
+                                 `related_type` VARCHAR(32) COMMENT '关联对象类型：ORDER / PRODUCT',
+                                 `source_event_id` VARCHAR(64) COMMENT '异步投递来源事件ID，用于幂等',
                                  `is_read` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否已读',
                                  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
                                  PRIMARY KEY (`id`),
+                                 UNIQUE KEY `uk_notification_source_event` (`source_event_id`),
+                                 KEY `idx_notifications_user_read_time` (`user_id`, `is_read`, `create_time`),
                                  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内通知表';
+
+CREATE TABLE `outbox_event` (
+    `id` BIGINT AUTO_INCREMENT,
+    `event_id` VARCHAR(64) NOT NULL,
+    `event_type` VARCHAR(50) NOT NULL,
+    `recipient_id` BIGINT NOT NULL,
+    `related_id` BIGINT NULL,
+    `related_type` VARCHAR(32) NULL,
+    `content` VARCHAR(255) NOT NULL,
+    `status` VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    `retry_count` INT NOT NULL DEFAULT 0,
+    `next_retry_time` DATETIME NULL,
+    `last_error` VARCHAR(500) NULL,
+    `published_time` DATETIME NULL,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_outbox_event_id` (`event_id`),
+    KEY `idx_outbox_status_retry` (`status`, `next_retry_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知可靠投递 Outbox';
 
 CREATE TABLE `product_images` (
                                   `id` BIGINT AUTO_INCREMENT,

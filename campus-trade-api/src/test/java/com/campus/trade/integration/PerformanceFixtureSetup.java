@@ -36,6 +36,7 @@ class PerformanceFixtureSetup {
     //夹具重建：先清掉 perf 账号的旧数据（按外键依赖顺序），再建新账号并充值
     @Test
     void preparesIsolatedPerformanceUsersAndBalance() {
+        jdbc.update("DELETE FROM notifications WHERE user_id IN (?, ?)", BUYER_ID, SELLER_ID);
         //资金单据（引用 orders，必须先删）
         jdbc.update("DELETE FROM account_flow WHERE user_id IN (?, ?)", BUYER_ID, SELLER_ID);
         jdbc.update("DELETE FROM settlement_order WHERE buyer_id = ? OR seller_id = ?", BUYER_ID, SELLER_ID);

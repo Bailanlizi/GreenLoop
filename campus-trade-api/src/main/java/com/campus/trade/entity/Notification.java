@@ -11,6 +11,8 @@ public class Notification implements Serializable {
     private String type;
     private String content;
     private String relatedId;
+    private String relatedType;
+    private String sourceEventId;
     private boolean isRead;
     private Date createTime;
 
@@ -25,6 +27,10 @@ public class Notification implements Serializable {
     public void setContent(String content) { this.content = content; }
     public String getRelatedId() { return relatedId; }
     public void setRelatedId(String relatedId) { this.relatedId = relatedId; }
+    public String getRelatedType() { return relatedType; }
+    public void setRelatedType(String relatedType) { this.relatedType = relatedType; }
+    public String getSourceEventId() { return sourceEventId; }
+    public void setSourceEventId(String sourceEventId) { this.sourceEventId = sourceEventId; }
     public boolean getIsRead() { return isRead; }
     public void setIsRead(boolean isRead) { this.isRead = isRead; }
     public Date getCreateTime() { return createTime; }

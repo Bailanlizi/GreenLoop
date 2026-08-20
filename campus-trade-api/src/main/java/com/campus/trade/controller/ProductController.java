@@ -35,17 +35,19 @@ public class ProductController {
 
     // 【修改】getProducts 接口，增加接收 minPrice, maxPrice, orderBy 参数
     @GetMapping
-    public Result<List<Product>> getProducts(
+    public Result<com.campus.trade.dto.PageResult<Product>> getProducts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false, defaultValue = "latest") String orderBy,
-            @RequestParam(required = false, defaultValue = "standard") String searchMode) {
+            @RequestParam(required = false, defaultValue = "standard") String searchMode,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
             throw new CustomException("最低价不能高于最高价");
         }
-        return Result.success(productService.searchProducts(keyword, categoryId, minPrice, maxPrice, orderBy, searchMode));
+        return Result.success(productService.searchProducts(keyword, categoryId, minPrice, maxPrice, orderBy, searchMode, page, size));
     }
 
     @GetMapping("/{id}")

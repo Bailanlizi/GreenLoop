@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campus.trade.mapper.OutboxEventMapper">
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">INSERT INTO outbox_event(event_id,event_type,recipient_id,related_id,related_type,content,status,retry_count) VALUES(#{eventId},#{eventType},#{recipientId},#{relatedId},#{relatedType},#{content},'PENDING',0)</insert>
+  <select id="findPublishable" resultType="com.campus.trade.entity.OutboxEvent">SELECT * FROM outbox_event WHERE status='PENDING' AND (next_retry_time IS NULL OR next_retry_time &lt;= NOW()) ORDER BY id LIMIT #{limit}</select>
+  <select id="findAll" resultType="com.campus.trade.entity.OutboxEvent">SELECT * FROM outbox_event <if test="status != null and status != ''">WHERE status=#{status}</if> ORDER BY id DESC</select>
+  <update id="markPublished">UPDATE outbox_event SET status='PUBLISHED', published_time=NOW(), last_error=NULL WHERE id=#{id} AND status='PENDING'</update>
+  <update id="markRetry">UPDATE outbox_event SET status=#{status}, retry_count=retry_count+1, next_retry_time=#{nextRetryTime}, last_error=#{lastError} WHERE id=#{id} AND status='PENDING'</update>
+  <update id="requeue">UPDATE outbox_event SET status='PENDING', retry_count=0, next_retry_time=NULL, last_error=NULL WHERE id=#{id} AND status='DEAD'</update>
+</mapper>

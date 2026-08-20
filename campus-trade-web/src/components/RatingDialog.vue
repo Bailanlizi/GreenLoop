@@ -44,12 +44,12 @@ const handleSubmit = async () => {
   }
   submitting.value = true;
   try {
-    await apiClient.post(`/api/orders/${props.orderData.id}/ratings`, form);
+    await apiClient.post(`/orders/${props.orderData.id}/ratings`, form);
     ElMessage.success('评价成功！');
     emit('submitted'); // 通知父组件刷新列表
     onClose();
   } catch (error) {
-    // 错误信息已由拦截器处理
+    // 错误提示由 axios 响应拦截器统一展示，保留弹窗内容供用户修正后重试。
   } finally {
     submitting.value = false;
   }

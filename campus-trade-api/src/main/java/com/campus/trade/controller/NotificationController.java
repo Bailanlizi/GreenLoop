@@ -10,9 +10,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import com.campus.trade.dto.PageResult;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/notifications")
 @PreAuthorize("isAuthenticated()")
 public class NotificationController {
 
@@ -24,8 +25,19 @@ public class NotificationController {
     }
 
     @GetMapping
-    public Result<List<Notification>> getMyNotifications(@AuthenticationPrincipal AuthenticatedUser user) {
-        return Result.success(notificationService.getUserNotifications(user.getUserId()));
+    public Result<PageResult<Notification>> getMyNotifications(@AuthenticationPrincipal AuthenticatedUser user,
+                                                                 @RequestParam(defaultValue = "1") Integer page,
+                                                                 @RequestParam(defaultValue = "20") Integer size,
+                                                                 @RequestParam(defaultValue = "ALL") String readStatus) {
+        return Result.success(notificationService.getUserNotifications(user.getUserId(), readStatus, page, size));
+    }
+
+    @PostMapping("/{notificationId}/read")
+    public Result<Void> markAsRead(@PathVariable String notificationId, @AuthenticationPrincipal AuthenticatedUser user) {
+        if (!notificationService.markNotificationAsRead(notificationId, user.getUserId())) {
+            return Result.error("通知不存在、已读或无权操作");
+        }
+        return Result.success();
     }
 
     @GetMapping("/unread-count")

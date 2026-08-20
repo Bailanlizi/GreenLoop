@@ -9,7 +9,7 @@ import com.campus.trade.exception.CustomException;
 import com.campus.trade.mapper.FinanceMapper;
 import com.campus.trade.mapper.OrderMapper;
 import com.campus.trade.service.FinanceService;
-import com.campus.trade.service.NotificationService;
+import com.campus.trade.service.NotificationEventService;
 import com.github.pagehelper.PageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +25,13 @@ public class FinanceServiceImpl implements FinanceService {
 
     private final FinanceMapper financeMapper;
     private final OrderMapper orderMapper;
-    private final NotificationService notificationService;
+    private final NotificationEventService notificationEvents;
 
     public FinanceServiceImpl(FinanceMapper financeMapper, OrderMapper orderMapper,
-                              NotificationService notificationService) {
+                              NotificationEventService notificationEvents) {
         this.financeMapper = financeMapper;
         this.orderMapper = orderMapper;
-        this.notificationService = notificationService;
+        this.notificationEvents = notificationEvents;
     }
 
     @Override
@@ -153,7 +153,7 @@ public class FinanceServiceImpl implements FinanceService {
         if (orderMapper.updateOrderStatusIfCurrent(orderId, OrderStatus.PENDING_PAYMENT.name(), targetStatus) != 1) {
             throw new CustomException("订单状态已变化，请刷新后重试");
         }
-        notificationService.createNotification(order.getSellerId(), "ORDER_PAID", "订单已支付，等待您履约。", orderId);
+        notificationEvents.order(order.getSellerId(), "ORDER_PAID", "订单已支付，等待您履约。", orderId);
         return financeMapper.findPaymentByOrderId(orderId);
     }
 

@@ -11,7 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/me") // "me" 代表当前登录的用户
+@RequestMapping("/me") // "me" 代表当前登录的用户
 @PreAuthorize("isAuthenticated()")
 public class ProfileController {
 

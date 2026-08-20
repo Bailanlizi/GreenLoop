@@ -3,6 +3,8 @@ package com.campus.trade.service.impl;
 import com.campus.trade.entity.Notification;
 import com.campus.trade.mapper.NotificationMapper;
 import com.campus.trade.service.NotificationService;
+import com.campus.trade.dto.PageResult;
+import com.github.pagehelper.PageHelper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,17 +20,26 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void createNotification(String userId, String type, String content, String relatedId) {
+        createNotification(userId, type, content, relatedId, "ORDER", null);
+    }
+
+    @Override
+    public void createNotification(String userId, String type, String content, String relatedId, String relatedType, String sourceEventId) {
         Notification notification = new Notification();
         notification.setUserId(userId);
         notification.setType(type);
         notification.setContent(content);
         notification.setRelatedId(relatedId);
+        notification.setRelatedType(relatedType);
+        notification.setSourceEventId(sourceEventId);
         notificationMapper.insert(notification);
     }
 
     @Override
-    public List<Notification> getUserNotifications(String userId) {
-        return notificationMapper.findByUserId(userId);
+    public PageResult<Notification> getUserNotifications(String userId, String readStatus, Integer page, Integer size) {
+        String normalized = "UNREAD".equals(readStatus) ? "UNREAD" : "ALL";
+        PageHelper.startPage(page == null || page < 1 ? 1 : page, size == null ? 20 : Math.max(1, Math.min(size, 100)));
+        return new PageResult<>(notificationMapper.findByUserId(userId, normalized));
     }
 
     @Override
@@ -37,9 +48,8 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void markNotificationAsRead(String notificationId, String userId) {
-        // 在实际项目中，这里应该先校验该通知是否属于该用户
-        notificationMapper.markAsRead(notificationId);
+    public boolean markNotificationAsRead(String notificationId, String userId) {
+        return notificationMapper.markAsRead(notificationId, userId) == 1;
     }
 
     @Override

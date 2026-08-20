@@ -31,6 +31,12 @@ services:
       timeout: 3s
       retries: 20
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   api:
     build:
       context: ./campus-trade-api
@@ -40,6 +46,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
       FILE_UPLOAD_DIR: /app/uploads
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
@@ -62,6 +69,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
 
   web:
     build:

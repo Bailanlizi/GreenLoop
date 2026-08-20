@@ -3,12 +3,15 @@
 <mapper namespace="com.campus.trade.mapper.NotificationMapper">
 
     <insert id="insert">
-        INSERT INTO notifications(user_id, type, content, related_id)
-        VALUES(#{userId}, #{type}, #{content}, #{relatedId})
+        INSERT INTO notifications(user_id, type, content, related_id, related_type, source_event_id)
+        VALUES(#{userId}, #{type}, #{content}, #{relatedId}, #{relatedType}, #{sourceEventId})
     </insert>
 
     <select id="findByUserId" resultType="com.campus.trade.entity.Notification">
-        SELECT * FROM notifications WHERE user_id = #{userId} ORDER BY create_time DESC LIMIT 50
+        SELECT * FROM notifications
+        WHERE user_id = #{userId}
+        <if test="readStatus == 'UNREAD'">AND is_read = FALSE</if>
+        ORDER BY create_time DESC, id DESC
     </select>
 
     <select id="countUnreadByUserId" resultType="long">
@@ -16,7 +19,7 @@
     </select>
 
     <update id="markAsRead">
-        UPDATE notifications SET is_read = TRUE WHERE id = #{notificationId}
+        UPDATE notifications SET is_read = TRUE WHERE id = #{notificationId} AND user_id = #{userId} AND is_read = FALSE
     </update>
 
     <update id="markAllAsReadByUserId">

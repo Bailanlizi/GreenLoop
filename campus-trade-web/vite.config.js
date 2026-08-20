@@ -1,8 +1,26 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    Components({
+      resolvers: [ElementPlusResolver({ importStyle: 'css' })],
+    }),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vue: ['vue', 'vue-router', 'pinia'],
+          elementPlus: ['element-plus'],
+          axios: ['axios'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
