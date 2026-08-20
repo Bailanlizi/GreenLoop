@@ -44,7 +44,7 @@ GreenLoop 不是单纯的二手交易 Demo，而是以**金融科技系统**为�
 
 | 分层 | 技术 |
 |------|------|
-| 后端 | Spring Boot 2.7.18 · Spring Security · JWT · MyBatis · MySQL 8 · Redis · PageHelper |
+| 后端 | Spring Boot 2.7.18 · Spring Security · JWT · MyBatis · MySQL 8 · Redis / Spring Cache · Redisson · PageHelper |
 | 前端 | Vue 3 · Vite · Vue Router · Pinia · Element Plus（管理端额外使用 ECharts） |
 | 构建 | Maven（后端）· npm（前端） |
 
@@ -70,6 +70,9 @@ GreenLoop 不是单纯的二手交易 Demo，而是以**金融科技系统**为�
 
 ### 5. 订单状态机
 严格定义**面交 / 快递双链路**状态流转（`PENDING_PAYMENT → AWAITING_MEETUP / AWAITING_SHIPMENT → SHIPPED → COMPLETED`，以及 `CANCELLED`）。通过条件更新原子锁定商品（下单即占库存），禁止非法状态回退与跨越，保证业务闭环可控。
+
+### 6. 多实例任务与缓存防护
+订单支付超时扫描通过 Redisson 分布式锁协调：多实例部署时同一周期仅一个实例扫描，实例异常后由 watch dog 超时释放并允许其他实例接管。Redis 缓存采用统一 `greenloop:` 前缀、按业务分级 TTL、TTL ±20% 随机抖动与空值短 TTL，分别降低缓存雪崩和缓存穿透风险。
 
 ---
 
